@@ -1,0 +1,10 @@
+log:
+  Level: info
+  Format: json #  text is another value supported
+  Output: file # stdout is another value
+  File:
+    Filename: "airdb.log"
+    MaxSize: 4024
+    Compress: true
+    MaxBackups: 5
+    MaxAge: 5
