@@ -1,15 +1,23 @@
 package db
 
-type Config struct {
+type CreateConfig struct {
+	// data path
 }
 
-// DB needs to be opened with a config
-func Open(config Config) (db *DB, err error) {
+func Create(config CreateConfig) (db *DB, err error) {
+	return
+}
+
+// DB needs to be opened from a data path
+func Open(path string) (db *DB, err error) {
+
 	return nil, nil
 }
 
 type DB interface {
+	Init()
 	Close()
+	ListTables()
 	AddTable()
 	DropTable()
 	ArchiveTable()
