@@ -1,6 +1,7 @@
 package server
 
 import (
+	d "github.com/dailyhunt/airdb/db"
 	"github.com/dailyhunt/airdb/utils"
 	"github.com/gin-gonic/gin"
 	logger "github.com/sirupsen/logrus"
@@ -8,7 +9,10 @@ import (
 	"time"
 )
 
-func StartHTTPServer() {
+var db d.DB
+
+func StartHTTPServer(d d.DB) {
+	db = d
 	router := gin.New()
 	//router.Use(gin.Logger())
 	router.GET("/store/:key", getValue)

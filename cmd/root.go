@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/dailyhunt/airdb/db"
 	"github.com/dailyhunt/airdb/server"
 	"github.com/onrik/logrus/filename"
 	logger "github.com/sirupsen/logrus"
@@ -24,7 +25,13 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// start HTTP Server
 		// Todo: Create store first and pass to all api servers
-		server.StartHTTPServer()
+		db, err := db.Open("dummypath")
+
+		// Todo: (sohan) add proper logging
+		if err != nil {
+			logger.Error("Error while opening database at dir ", "dummy dir")
+		}
+		server.StartHTTPServer(db)
 	},
 }
 

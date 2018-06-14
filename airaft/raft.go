@@ -7,7 +7,7 @@ import (
 	"github.com/coreos/etcd/wal"
 )
 
-type raftNode struct {
+type RaftNode struct {
 	// Basic Raft info
 	ID    int      // id for raft session
 	join  bool     // flag , if node is joining existing cluster
@@ -39,34 +39,35 @@ type raftNode struct {
 	httpDoneCh chan struct{}
 }
 
-func newRaftNode() {
+func newRaftNode() *RaftNode {
+	return nil
 
 }
 
-func (rc *raftNode) startRaft() {
+func (rc *RaftNode) startRaft() {
 
 }
 
-func (rc *raftNode) stopRaft() {
+func (rc *RaftNode) stopRaft() {
 
 }
 
 // Find out entries to apply/publish
 // Ignore old entries from last index
-func (rc *raftNode) entriesToApply() {
+func (rc *RaftNode) entriesToApply() {
 
 }
 
 // Write committed logs to commit Channel
 // Return if all entries could be published
-func (rc *raftNode) publishEntries() {
+func (rc *RaftNode) publishEntries() {
 
 }
 
-func (rc *raftNode) openWal() {
+func (rc *RaftNode) openWal() {
 
 }
 
-func (rc *raftNode) replayWAL() {
+func (rc *RaftNode) replayWAL() {
 
 }

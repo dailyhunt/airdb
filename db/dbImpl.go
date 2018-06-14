@@ -39,7 +39,7 @@ type Handle struct {
 	// TODO: directory lock
 	persistentState PersistentState
 	runState        RunState
-	tables          map[string]*table.Table // map of tables
+	tables          map[string]*table.KvTable // map of tables
 }
 
 // find DB manifest file at the path.
