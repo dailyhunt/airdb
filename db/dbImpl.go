@@ -4,8 +4,8 @@ import "github.com/dailyhunt/airdb/table"
 
 //
 // Directory layout
-// (db root)
-//		- db manifest file (contains active tables etc)
+// (DB root)
+//		- DB manifest file (contains active tables etc)
 //		- wal
 //		- (table root, multiple such tables)
 //				- table manifest file (contains active region etc)
@@ -18,14 +18,14 @@ import "github.com/dailyhunt/airdb/table"
 type PersistentState int
 
 const (
-	CreatedPState     PersistentState = iota
+	CreatedPState PersistentState = iota
 	InitialisedPState
 )
 
 type RunState int
 
 const (
-	CreatingRState     RunState = iota
+	CreatingRState RunState = iota
 	CreatedRState
 	InitialisingRState
 	InitialisedRState
@@ -39,12 +39,12 @@ type Handle struct {
 	// TODO: directory lock
 	persistentState PersistentState
 	runState        RunState
-	tables          []table.Table // list of tables
+	tables          map[string]*table.Table // map of tables
 }
 
-// find db manifest file at the path.
+// find DB manifest file at the path.
 func (db *Handle) Open(path string) {
-	// check if db exists
+	// check if DB exists
 	// if not, then panic
 	// if exists, then see if lock can be taken
 	// if yes, then take the lock. else panic
@@ -52,11 +52,11 @@ func (db *Handle) Open(path string) {
 }
 
 func (db *Handle) Create() {
-	// check if db exists
+	// check if DB exists
 	// if exists then panic
 	// if not exists then create it and take a lock
 	// if yes, then take the lock. else panic
-	// internally, db open would require loading all tables metadata and opening tables
+	// internally, DB open would require loading all tables metadata and opening tables
 }
 
 func (db *Handle) Init() {
