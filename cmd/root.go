@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/onrik/logrus/filename"
 	logger "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -143,4 +144,5 @@ func configureLogger() {
 	}
 
 	logger.SetLevel(logLevel)
+	logger.AddHook(filename.NewHook())
 }
