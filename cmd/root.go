@@ -1,15 +1,14 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
 	"fmt"
-	"os"
-	"github.com/spf13/viper"
-	"github.com/spf13/pflag"
-	"strings"
-	"gopkg.in/natefinch/lumberjack.v2"
 	logger "github.com/sirupsen/logrus"
-	"github.com/davecgh/go-spew/spew"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
+	"gopkg.in/natefinch/lumberjack.v2"
+	"os"
+	"strings"
 )
 
 const AppName = "airdb"
@@ -64,6 +63,7 @@ func initConfig() {
 		env := os.Getenv("env")
 		if env == "" {
 			env = "local"
+			viper.AddConfigPath("./airdb/config")
 		}
 
 		viper.SetConfigName(fmt.Sprintf("config-%s", env))
@@ -99,7 +99,7 @@ func configureLogger() {
 		Level  string
 		Format logFormat
 		Output logOutput
-		File struct {
+		File   struct {
 			Filename   string
 			MaxSize    int
 			Compress   bool
