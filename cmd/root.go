@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/dailyhunt/airdb/server"
 	"github.com/onrik/logrus/filename"
 	logger "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -21,7 +22,9 @@ var rootCmd = &cobra.Command{
 	Short: "AirDB is very fast key value LSM tree database",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		// Do Stuff Here
+		// start HTTP Server
+		// Todo: Create store first and pass to all api servers
+		server.StartHTTPServer()
 	},
 }
 

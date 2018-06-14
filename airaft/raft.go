@@ -33,8 +33,7 @@ type raftNode struct {
 	raftStorage   *raft.MemoryStorage
 	raftTransport *rafthttp.Transport
 
-	// Stop/Done channels
-	// TODO: (sohan)
+	// Explicit cancellation of channels
 	stopCh     chan struct{}
 	httpStopCh chan struct{}
 	httpDoneCh chan struct{}
