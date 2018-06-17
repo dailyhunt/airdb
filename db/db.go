@@ -15,7 +15,7 @@ func Create(config CreateConfig) (db *Handle, err error) {
 // DB needs to be opened from a data path
 func Open(path string) (db *Handle, err error) {
 	handle := &Handle{
-		tables: make(map[string]*table.KvTable),
+		tables: make(map[string]table.Table),
 	}
 
 	handle.tables["t1"] = &table.KvTable{}
@@ -26,6 +26,7 @@ func Open(path string) (db *Handle, err error) {
 type DB interface {
 	Init()
 	Close()
+	GetTable(name string) (table.Table, error)
 	ListTables()
 	AddTable()
 	DropTable()

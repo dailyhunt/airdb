@@ -1,6 +1,11 @@
 package table
 
+import (
+	"github.com/dailyhunt/airdb/region"
+)
+
 type KvTable struct {
+	region region.Region
 }
 
 func (kv *KvTable) Close() {
@@ -15,8 +20,8 @@ func (kv *KvTable) Archive() {
 	panic("implement me")
 }
 
-func (kv *KvTable) Put() {
-	panic("implement me")
+func (kv *KvTable) Put(put *Put) error {
+	kv.region.Put(put)
 }
 
 func (kv *KvTable) Get() {

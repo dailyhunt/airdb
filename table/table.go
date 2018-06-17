@@ -18,10 +18,9 @@ type Table interface {
 	Close()
 	Drop()
 	Archive()
-	Put()
+	Put(put *Put) error
 	Get()
 	Merge()
 	Add()
 	Decay()
 }
-

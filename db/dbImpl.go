@@ -1,6 +1,10 @@
 package db
 
-import "github.com/dailyhunt/airdb/table"
+import (
+	"github.com/dailyhunt/airdb/table"
+	"github.com/pkg/errors"
+	logger "github.com/sirupsen/logrus"
+)
 
 //
 // Directory layout
@@ -14,6 +18,8 @@ import "github.com/dailyhunt/airdb/table"
 //						- sst files
 //						- vlog files
 //
+
+var tableNotFound = errors.New("table not found")
 
 type PersistentState int
 
@@ -39,7 +45,7 @@ type Handle struct {
 	// TODO: directory lock
 	persistentState PersistentState
 	runState        RunState
-	tables          map[string]*table.KvTable // map of tables
+	tables          map[string]table.Table // map of tables
 }
 
 // find DB manifest file at the path.
@@ -64,6 +70,17 @@ func (db *Handle) Init() {
 }
 
 func (db *Handle) Close() {
+
+}
+
+func (db *Handle) GetTable(name string) (table.Table, error) {
+	table, ok := db.tables[name]
+	if !ok {
+		logger.Error("Table does not exists : ", table, tableNotFound)
+		return nil, tableNotFound
+	}
+
+	return table, nil
 
 }
 

@@ -2,6 +2,7 @@ package server
 
 import (
 	d "github.com/dailyhunt/airdb/db"
+	"github.com/dailyhunt/airdb/table"
 	"github.com/dailyhunt/airdb/utils"
 	"github.com/gin-gonic/gin"
 	logger "github.com/sirupsen/logrus"
@@ -30,24 +31,33 @@ func getValue(c *gin.Context) {
 }
 
 func setValue(c *gin.Context) {
-	var kvCommand KvCommand
-	if err := c.ShouldBindJSON(&kvCommand); err == nil {
+	var put table.Put
+	if err := c.ShouldBindJSON(&put); err == nil {
 
-		if kvCommand.Key == utils.EMPTY_STR || kvCommand.Value == utils.EMPTY_STR {
+		if put.K == utils.EMPTY_STR || put.V == utils.EMPTY_STR {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid content"})
 			logger.WithFields(logger.Fields{
-				"key":   kvCommand.Key,
-				"value": kvCommand.Value,
+				"key":   put.K,
+				"value": put.V,
 			}).Error("Empty Key/Value POST Request ")
 		} else {
-			kvCommand.Epoch = time.Now()
-			kvCommand.Op = OP_SET
+			put.T = time.Now()
 			logger.WithFields(logger.Fields{
-				"key":   kvCommand.Key,
-				"value": kvCommand.Value,
-				"op":    "SET",
-				"epoch": kvCommand.Epoch,
+				"key":   put.K,
+				"value": put.V,
+				"epoch": put.T,
 			}).Info("KV POST Request ")
+
+			table, err := db.GetTable("t1")
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			} else {
+				err := table.Put(&put)
+				// Todo(sohan) return response
+				if err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				}
+			}
 
 		}
 	} else {

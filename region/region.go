@@ -4,6 +4,7 @@ import (
 	"github.com/dailyhunt/airdb/airaft"
 	"github.com/dailyhunt/airdb/region/mt"
 	"github.com/dailyhunt/airdb/region/vlog"
+	"github.com/dailyhunt/airdb/table"
 )
 
 type Config struct {
@@ -25,7 +26,7 @@ type Region interface {
 	Close()
 	Drop()
 	Archive()
-	Put()
+	Put(put *table.Put) error
 	Get()
 	Merge()
 	Add()
