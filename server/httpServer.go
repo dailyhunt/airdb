@@ -2,7 +2,7 @@ package server
 
 import (
 	d "github.com/dailyhunt/airdb/db"
-	"github.com/dailyhunt/airdb/table"
+	"github.com/dailyhunt/airdb/operation"
 	"github.com/dailyhunt/airdb/utils"
 	"github.com/gin-gonic/gin"
 	logger "github.com/sirupsen/logrus"
@@ -31,7 +31,7 @@ func getValue(c *gin.Context) {
 }
 
 func setValue(c *gin.Context) {
-	var put table.Put
+	var put operation.Put
 	if err := c.ShouldBindJSON(&put); err == nil {
 
 		if put.K == utils.EMPTY_STR || put.V == utils.EMPTY_STR {

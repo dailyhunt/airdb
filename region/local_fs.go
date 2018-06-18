@@ -1,7 +1,7 @@
 package region
 
 import (
-	"github.com/dailyhunt/airdb/table"
+	"github.com/dailyhunt/airdb/operation"
 )
 
 type LocalFs struct {
@@ -20,7 +20,7 @@ func (fs *LocalFs) Archive() {
 	panic("implement me")
 }
 
-func (fs *LocalFs) Put(put *table.Put) error {
+func (fs *LocalFs) Put(put *operation.Put) error {
 	panic("implement me")
 }
 

@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/dailyhunt/airdb/db"
-	"github.com/dailyhunt/airdb/server"
 	"github.com/onrik/logrus/filename"
 	logger "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -17,6 +15,8 @@ import (
 const AppName = "airdb"
 
 var cfgFile string
+var nodeId int
+var cluster string
 
 var rootCmd = &cobra.Command{
 	Use:   "airdb",
@@ -25,13 +25,15 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// start HTTP Server
 		// Todo: Create store first and pass to all api servers
-		db, err := db.Open("dummypath")
+		fmt.Println("Id ", nodeId)
+		fmt.Println("Cluster ", cluster)
+		/*db, err := db.OpenForDebug(1, "")
 
 		// Todo: (sohan) add proper logging
 		if err != nil {
 			logger.Error("Error while opening database at dir ", "dummy dir")
 		}
-		server.StartHTTPServer(db)
+		server.StartHTTPServer(db)*/
 	},
 }
 

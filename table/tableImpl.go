@@ -1,41 +1,43 @@
 package table
 
 import (
+	"github.com/dailyhunt/airdb/operation"
 	"github.com/dailyhunt/airdb/region"
 )
 
 type KvTable struct {
-	region region.Region
+	Region region.Region
 }
 
-func (kv *KvTable) Close() {
+func (t *KvTable) Close() {
 	panic("implement me")
 }
 
-func (kv *KvTable) Drop() {
+func (t *KvTable) Drop() {
 	panic("implement me")
 }
 
-func (kv *KvTable) Archive() {
+func (t *KvTable) Archive() {
 	panic("implement me")
 }
 
-func (kv *KvTable) Put(put *Put) error {
-	kv.region.Put(put)
+func (t *KvTable) Put(put *operation.Put) error {
+	t.Region.Put(put)
+	return nil
 }
 
-func (kv *KvTable) Get() {
+func (t *KvTable) Get() {
 	panic("implement me")
 }
 
-func (kv *KvTable) Merge() {
+func (t *KvTable) Merge() {
 	panic("implement me")
 }
 
-func (kv *KvTable) Add() {
+func (t *KvTable) Add() {
 	panic("implement me")
 }
 
-func (kv *KvTable) Decay() {
+func (t *KvTable) Decay() {
 	panic("implement me")
 }
