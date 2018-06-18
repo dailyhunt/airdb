@@ -9,7 +9,7 @@ import (
 	"strings"
 	"gopkg.in/natefinch/lumberjack.v2"
 	logger "github.com/sirupsen/logrus"
-	"github.com/davecgh/go-spew/spew"
+	//"github.com/davecgh/go-spew/spew"
 )
 
 const AppName = "airdb"
@@ -41,7 +41,7 @@ func init() {
 	//
 	// enable commandline flags
 	//
-	pflag.Parse()
+	//pflag.Parse()
 	viper.BindPFlags(pflag.CommandLine)
 
 	//
