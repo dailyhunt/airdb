@@ -1,6 +1,12 @@
 package db
 
-import "github.com/dailyhunt/airdb/table"
+import (
+	"github.com/dailyhunt/airdb/table"
+	"github.com/dailyhunt/airdb/utils/fileUtils"
+	"github.com/pkg/errors"
+	"github.com/theckman/go-flock"
+	"path/filepath"
+)
 
 //
 // Directory layout
@@ -14,6 +20,9 @@ import "github.com/dailyhunt/airdb/table"
 //						- sst files
 //						- vlog files
 //
+
+const LockFile = "airdb.lock"
+const ManifestFile = "airdb.manifest"
 
 type PersistentState int
 
@@ -33,66 +42,136 @@ const (
 	StartedRState
 )
 
-// TODO: manifest file format
-
 type Handle struct {
-	// TODO: directory lock
+	lock            *flock.Flock
+	path            string
 	persistentState PersistentState
 	runState        RunState
 	tables          []table.Table // list of tables
 }
 
-// find db manifest file at the path.
-func (db *Handle) Open(path string) {
-	// check if db exists
-	// if not, then panic
-	// if exists, then see if lock can be taken
-	// if yes, then take the lock. else panic
-	// read manifest and populate handle
+// check if db exists
+// if not, then panic
+// if exists, then see if lock can be taken
+// if yes, then take the lock. else panic
+// read manifest and populate handle
+func (db *Handle) Open(path string) (err error) {
+	db.path = path
+
+	err = fileUtils.AssertExists(path)
+	if err != nil {
+		err = errors.Wrap(err, "Error in opening DB at path ("+path+")")
+		return
+	}
+
+	err = fileUtils.AssertDir(path)
+	if err != nil {
+		err = errors.Wrap(err, "Error in opening DB at path ("+path+")")
+		return
+	}
+
+	// TODO: check if manifest file exists or not
+
+	// take a lock
+	db.Lock()
+
+	// open and load manifest file
+
+	return
 }
 
-func (db *Handle) Create() {
-	// check if db exists
-	// if exists then panic
-	// if not exists then create it and take a lock
-	// if yes, then take the lock. else panic
-	// internally, db open would require loading all tables metadata and opening tables
+// check if db exists
+// if exists then panic
+// if not exists then create it and take a lock
+// if yes, then take the lock. else panic
+// internally, db open would require loading all tables metadata and opening tables
+func (db *Handle) Create(config CreateConfig) (err error) {
+	db.path = config.path
+
+	exists, err := fileUtils.Exists(config.path)
+	if err != nil {
+		err = errors.Wrap(err, "Error in creating DB at path ("+config.path+")")
+		return
+	}
+
+	if exists {
+		if err = fileUtils.AssertDir(config.path); err != nil {
+			err = errors.Wrap(err, "Error in creating DB at path ("+config.path+")")
+			return
+		}
+
+		if err = fileUtils.AssertEmpty(config.path); err != nil {
+			err = errors.Wrap(err, "Error in creating DB at path ("+config.path+")")
+			return
+		}
+	} else {
+		// create directory
+	}
+
+	// take a lock
+	db.Lock()
+
+	// create manifest file
+
+	return
 }
 
-func (db *Handle) Init() {
+//func (db *Handle) Init(config InitConfig) (err error) {
+//	return
+//}
 
+func (db *Handle) Close() (err error) {
+	// close all underlying tables
+
+	// remove lock
+	db.Unlock()
+
+	return
 }
 
-func (db *Handle) Close() {
+func (db *Handle) Lock() (err error) {
+	lock := flock.NewFlock(filepath.Join(db.path, LockFile))
 
+	locked, err := lock.TryLock()
+
+	if err != nil {
+		// handle locking error
+	}
+
+	if !locked {
+
+	}
+
+	db.lock = lock
+
+	return
 }
 
-func (db *Handle) ListTables() {
+func (db *Handle) Unlock() (err error) {
+	if db.lock != nil {
+		// do work
+		db.lock.Unlock()
+	}
 
+	return
 }
 
-func (db *Handle) AddTable() {
-
+func (db *Handle) ListTables(inactive bool) (tables []table.Table, err error) {
+	return
 }
 
-func (db *Handle) DropTable() {
-
+func (db *Handle) GetTable(name string) (table table.Table, err error) {
+	return
 }
 
-func (db *Handle) ArchiveTable() {
-
+func (db *Handle) CreateTable(config table.CreateConfig) (table table.Table, err error) {
+	return
 }
 
-// version => state => num tables => table metadata
-type manifest struct {
-	version string
-	state   PersistentState
+func (db *Handle) DropTable(name string) (err error) {
+	return
 }
 
-func readManifest() {
-
-}
-
-func persistManifest() {
-
+func (db *Handle) ArchiveTable(name string) (err error) {
+	return
 }

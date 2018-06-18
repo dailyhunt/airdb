@@ -1,5 +1,9 @@
 package table
 
+type CreateConfig struct {
+
+}
+
 type Config struct {
 }
 
