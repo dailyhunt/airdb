@@ -76,14 +76,14 @@ func (fs *LocalFs) readCommits(commitC <-chan *string, errorC <-chan error) {
 
 		var dataKv map[string]string
 		err := json.Unmarshal([]byte(*data), &dataKv)
-		log.Debug("Reading commits")
+		log.Debug("Reading commits - kv size ", len(fs.kvStore))
 		if err != nil {
 			log.Fatalf("airdb: could not decode message (%v)", err)
 		}
 		//.mu.Lock()
-		for k, v := range dataKv {
-			fs.kvStore[k] = v
-		}
+		fs.kvStore[dataKv["K"]] = dataKv["V"]
+
+		log.Info("Kv Store with size  ", len(fs.kvStore))
 
 		//s.mu.Unlock()
 	}

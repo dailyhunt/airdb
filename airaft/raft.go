@@ -292,7 +292,6 @@ func (rc *raftNode) writeError(err error) {
 func (rc *raftNode) startRaft() {
 
 	// Todo(sohan): Snapshot
-	// Todo(sohan): Snapshot
 	if !fileutil.Exist(rc.snapDir) {
 		if err := os.Mkdir(rc.snapDir, 0750); err != nil {
 			logger.Fatalf("airdb: cannot create dir for snapshot (%v)", err)
@@ -418,6 +417,8 @@ func (rc *raftNode) serveRaft() {
 func (rc *raftNode) serveChannels() {
 	// Todo : Wal and snapshot related
 
+	defer rc.wal.Close()
+
 	// Todo(sohan): Take from config
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
@@ -434,7 +435,7 @@ func (rc *raftNode) serveChannels() {
 			// store raft entries to wal, then publish over commit channel
 		case rd := <-rc.raftNode.Ready():
 			// Todo:
-			//rc.wal.Save(rd.HardState, rd.Entries)
+			rc.wal.Save(rd.HardState, rd.Entries)
 			// Todo: Save to WAL
 			// Todo: Snapshot stuff
 			rc.raftStorage.Append(rd.Entries)
