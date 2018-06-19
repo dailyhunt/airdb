@@ -1,7 +1,6 @@
 package region
 
 import (
-	"github.com/dailyhunt/airdb/airaft"
 	"github.com/dailyhunt/airdb/operation"
 	"github.com/dailyhunt/airdb/region/mt"
 	"github.com/dailyhunt/airdb/region/vlog"
@@ -31,12 +30,12 @@ type Region interface {
 	Merge()
 	Add()
 	Decay()
+	//ReadCommits()
 }
 
 type Replica struct {
 	ID       uint64
 	IsLeader bool
-	Raft     *airaft.RaftNode
 	MemTable *mt.Memtable
 	VLog     *vlog.Vlog
 	// Ids of peers for this replica across cluster

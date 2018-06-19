@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/dailyhunt/airdb/db"
+	"github.com/dailyhunt/airdb/server"
 	"github.com/onrik/logrus/filename"
 	logger "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -16,7 +18,7 @@ const AppName = "airdb"
 
 var cfgFile string
 var nodeId int
-var cluster string
+var peers string
 
 var rootCmd = &cobra.Command{
 	Use:   "airdb",
@@ -26,14 +28,14 @@ var rootCmd = &cobra.Command{
 		// start HTTP Server
 		// Todo: Create store first and pass to all api servers
 		fmt.Println("Id ", nodeId)
-		fmt.Println("Cluster ", cluster)
-		/*db, err := db.OpenForDebug(1, "")
+		fmt.Println("Cluster ", peers)
+		db, err := db.OpenForDebug(nodeId, peers)
 
 		// Todo: (sohan) add proper logging
 		if err != nil {
 			logger.Error("Error while opening database at dir ", "dummy dir")
 		}
-		server.StartHTTPServer(db)*/
+		server.StartHTTPServer(db)
 	},
 }
 
@@ -49,11 +51,13 @@ func init() {
 
 	// TODO: mention default search order
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file")
+	rootCmd.PersistentFlags().StringVarP(&peers, "peers", "p", "", "peers")
+	rootCmd.PersistentFlags().IntVarP(&nodeId, "nodeId", "n", 0, "node id")
 
 	//
 	// enable commandline flags
 	//
-	pflag.Parse()
+	//pflag.Parse()
 	viper.BindPFlags(pflag.CommandLine)
 
 	//
@@ -69,6 +73,7 @@ func initConfig() {
 	if cfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
+		fmt.Print("Config is not empty")
 	} else {
 		//
 		// Config file
@@ -150,7 +155,8 @@ func configureLogger() {
 		panic(fmt.Errorf("Unsupported log output: %s ! Supported Values: stdout, file \n", logConfig.Output))
 	}
 
-	logLevel, err := logger.ParseLevel(logConfig.Level)
+	//logLevel, err := logger.ParseLevel(logConfig.Level)
+	logLevel, err := logger.ParseLevel("debug")
 	if err != nil {
 		panic(fmt.Errorf("Unsupported log level: %s ! Supported Values: panic, fatal, error, warn, warning, debug, info \n", logConfig.Level))
 	}

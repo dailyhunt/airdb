@@ -12,6 +12,3 @@
 *.out
 
 vendor/
-Gopkg.lock
-Gopkg.toml
-airdb
