@@ -13,6 +13,7 @@ import (
 	"github.com/coreos/etcd/pkg/fileutil"
 	"github.com/coreos/etcd/pkg/types"
 	"github.com/coreos/etcd/wal/walpb"
+	"github.com/dailyhunt/airdb/utils"
 	logger "github.com/sirupsen/logrus"
 	"go.uber.org/zap"
 	"net/http"
@@ -158,9 +159,9 @@ func (rc *raftNode) publishEntries(entries []raftpb.Entry) bool {
 			/*var put operation.Put
 			json.Unmarshal(entry.Data, &put)*/
 			st := rc.raftNode.Status()
-			logger.Info(fmt.Sprintf("I am node [ id : %d] - [term :  %d ] - [ vote : %d ] - [ commit : %d ] - "+
+			logger.Info(fmt.Sprintf("[ time : %s ] = I am node [ id : %d] - [term :  %d ] - [ vote : %d ] - [ commit : %d ] - "+
 				"[ state : %s ] - [ applied : %v ] - [ my-leader : %d ]",
-				st.ID, st.Term, st.Commit, st.Vote, st.RaftState.String(), st.Applied, st.Lead))
+				utils.GetCurrentTime(), st.ID, st.Term, st.Commit, st.Vote, st.RaftState.String(), st.Applied, st.Lead))
 
 			s := string(entry.Data)
 			select {
@@ -178,6 +179,7 @@ func (rc *raftNode) publishEntries(entries []raftpb.Entry) bool {
 				if len(cc.Context) > 0 {
 					nodeId := types.ID(cc.NodeID)
 					us := []string{string(cc.Context)} // Todo : Log this
+					logger.Info("Adding node to cluster ", nodeId, " us -> ", us)
 					rc.raftTransport.AddPeer(nodeId, us)
 				}
 			case raftpb.ConfChangeRemoveNode:
@@ -426,7 +428,7 @@ func (rc *raftNode) serveChannels() {
 	defer rc.wal.Close()
 
 	// Todo(sohan): Take from config
-	ticker := time.NewTicker(2 * time.Second)
+	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
 
 	go rc.proposeToRaft()
@@ -444,6 +446,7 @@ func (rc *raftNode) serveChannels() {
 			rc.wal.Save(rd.HardState, rd.Entries)
 			// Todo: Save to WAL
 			// Todo: Snapshot stuff
+			//state := rc.raftNode.Status().RaftState.String()
 			rc.raftStorage.Append(rd.Entries)
 			rc.raftTransport.Send(rd.Messages)
 

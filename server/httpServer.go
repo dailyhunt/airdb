@@ -69,7 +69,7 @@ func setValue(c *gin.Context) {
 			logger.WithFields(logger.Fields{
 				"key":   put.K,
 				"value": put.V,
-				"epoch": put.T,
+				"epoch": utils.GetCurrentTime(),
 			}).Info("KV POST Request ")
 
 			table, err := db.GetTable("t1")

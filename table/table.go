@@ -27,7 +27,7 @@ func Create(config Config) (table *Table, err error) {
 
 func NewKvTable(id int, cluster string, join bool) (table Table) {
 
-	logger.Info("Added dummy table with local fs region : Table Name t1")
+	logger.Debug("Added dummy table with local fs region : Table Name t1")
 
 	proposeC := make(chan string)
 	confChangeC := make(chan raftpb.ConfChange)

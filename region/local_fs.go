@@ -9,6 +9,7 @@ import (
 
 	"encoding/json"
 	"github.com/coreos/etcd/raft/raftpb"
+	"github.com/dailyhunt/airdb/utils"
 )
 
 type LocalFs struct {
@@ -87,12 +88,19 @@ func (fs *LocalFs) readCommits(commitC <-chan *string, errorC <-chan error) {
 
 		var dataKv map[string]string
 		err := json.Unmarshal([]byte(*data), &dataKv)
-		log.Info("Reading commits - kv size ", len(fs.kvStore))
+		key := dataKv["K"]
+		value := dataKv["V"]
 		if err != nil {
 			log.Fatalf("airdb: could not decode message (%v)", err)
 		}
 		//.mu.Lock()
-		fs.kvStore[dataKv["K"]] = dataKv["V"]
+		fs.kvStore[key] = value
+		log.WithFields(log.Fields{
+			"key":       key,
+			"value":     value,
+			"storeSize": len(fs.kvStore),
+			"epoch":     utils.GetCurrentTime(),
+		}).Info("Applying Commit to FSM ")
 
 		//log.Info("Kv Store with size  ", len(fs.kvStore))
 
