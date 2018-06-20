@@ -346,6 +346,7 @@ func (rc *raftNode) startRaft() {
 	transLogger, _ := zap.NewProduction()
 
 	// Todo(sohan): Raft Transport
+	// This will always be started on current node
 	rc.raftTransport = &rafthttp.Transport{
 		Logger:      transLogger,
 		ID:          types.ID(rc.id),
