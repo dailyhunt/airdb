@@ -8,14 +8,25 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"encoding/json"
+	"github.com/coreos/etcd/raft/raftpb"
 )
 
 type LocalFs struct {
-	proposeC chan<- string // channel for proposing updates
+	proposeC    chan<- string // channel for proposing updates
+	confChangeC chan<- raftpb.ConfChange
 	//mu          sync.RWMutex
 	kvStore     map[string]string // current committed key-value pairs
 	snapshotter *snap.Snapshotter
 	Replica
+}
+
+func (fs *LocalFs) AddPeer(nodeId int64, url []byte) {
+	cc := raftpb.ConfChange{
+		Type:    raftpb.ConfChangeAddNode,
+		NodeID:  uint64(nodeId),
+		Context: url,
+	}
+	fs.confChangeC <- cc
 }
 
 func (fs *LocalFs) Close() {
@@ -66,7 +77,7 @@ func (fs *LocalFs) readCommits(commitC <-chan *string, errorC <-chan error) {
 			if err != nil {
 				log.Panic(err)
 			}
-			log.Printf("loading snapshot at term %d and index %d", snapshot.Metadata.Term, snapshot.Metadata.Index)
+			log.Info("loading snapshot at term %d and index %d", snapshot.Metadata.Term, snapshot.Metadata.Index)
 			if err := fs.recoverFromSnapshot(snapshot.Data); err != nil {
 				log.Error("not able to recover snapshot")
 				log.Panic(err)
@@ -76,14 +87,14 @@ func (fs *LocalFs) readCommits(commitC <-chan *string, errorC <-chan error) {
 
 		var dataKv map[string]string
 		err := json.Unmarshal([]byte(*data), &dataKv)
-		log.Debug("Reading commits - kv size ", len(fs.kvStore))
+		log.Info("Reading commits - kv size ", len(fs.kvStore))
 		if err != nil {
 			log.Fatalf("airdb: could not decode message (%v)", err)
 		}
 		//.mu.Lock()
 		fs.kvStore[dataKv["K"]] = dataKv["V"]
 
-		log.Info("Kv Store with size  ", len(fs.kvStore))
+		//log.Info("Kv Store with size  ", len(fs.kvStore))
 
 		//s.mu.Unlock()
 	}
@@ -110,10 +121,12 @@ func (fs *LocalFs) recoverFromSnapshot(Data []byte) interface{} {
 	return nil
 }
 
-func NewLocalFs(snapshotter *snap.Snapshotter, proposeChan chan<- string, commitChan <-chan *string, errorChan <-chan error) *LocalFs {
+func NewLocalFs(snapshotter *snap.Snapshotter, proposeChan chan<- string, commitChan <-chan *string, errorChan <-chan error,
+	confChange chan<- raftpb.ConfChange) *LocalFs {
 
 	region := &LocalFs{
 		proposeC:    proposeChan,
+		confChangeC: confChange,
 		kvStore:     make(map[string]string),
 		snapshotter: snapshotter,
 	}

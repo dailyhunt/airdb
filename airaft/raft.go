@@ -157,6 +157,10 @@ func (rc *raftNode) publishEntries(entries []raftpb.Entry) bool {
 			// Todo: Handle Type of message as of now it is string
 			/*var put operation.Put
 			json.Unmarshal(entry.Data, &put)*/
+			st := rc.raftNode.Status()
+			logger.Info(fmt.Sprintf("I am node [ id : %d] - [term :  %d ] - [ vote : %d ] - [ commit : %d ] - "+
+				"[ state : %s ] - [ applied : %v ] - [ my-leader : %d ]",
+				st.ID, st.Term, st.Commit, st.Vote, st.RaftState.String(), st.Applied, st.Lead))
 
 			s := string(entry.Data)
 			select {
@@ -253,7 +257,7 @@ func (rc *raftNode) replayWal() *wal.WAL {
 	snapshot := rc.loadSnapshot()
 	w := rc.openWal(snapshot)
 	_, st, ents, err := w.ReadAll()
-	logger.Info("Size of entries ", len(ents))
+	logger.Debug("Size of entries ", len(ents))
 	if err != nil {
 		logger.Fatalf("airdb: failed to read WAL (%v)", err)
 	}
@@ -312,7 +316,7 @@ func (rc *raftNode) startRaft() {
 	}
 
 	// TODO(sohan) - set read only replica using learners array
-	logger.Info("Creating Raft Config for ", rc.id)
+	logger.Debug("Creating Raft Config for ", rc.id)
 
 	// Todo(Sohan) - take config from Config file
 	rConfig := &raft.Config{
@@ -337,9 +341,11 @@ func (rc *raftNode) startRaft() {
 		rc.raftNode = raft.StartNode(rConfig, startPeers)
 	}
 
+	transLogger, _ := zap.NewProduction()
+
 	// Todo(sohan): Raft Transport
 	rc.raftTransport = &rafthttp.Transport{
-		Logger:      zap.NewExample(),
+		Logger:      transLogger,
 		ID:          types.ID(rc.id),
 		ClusterID:   0x1000,
 		Raft:        rc,
@@ -389,13 +395,13 @@ func (rc *raftNode) stopHTTP() {
 
 // Todo: Doc
 func (rc *raftNode) serveRaft() {
-	logger.Info("Starting Serving Raft transport", rc.id)
+	logger.Debug("Starting Serving Raft transport", rc.id)
 	transportAddress := rc.peers[rc.id-1]
 	url, err := url.Parse(transportAddress)
 	if err != nil {
 		logger.Fatalf("Failing parsing URL for raft transport (%v)", err)
 	}
-	logger.Info("Raft Transport Address ", url)
+	logger.Debug("Raft Transport Address ", url)
 	listener, err := newRaftListener(url.Host, rc.stopCh)
 	if err != nil {
 		logger.Fatalf("Failed to listen for raft http : (%v)", err)
@@ -420,7 +426,7 @@ func (rc *raftNode) serveChannels() {
 	defer rc.wal.Close()
 
 	// Todo(sohan): Take from config
-	ticker := time.NewTicker(100 * time.Millisecond)
+	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
 	go rc.proposeToRaft()
@@ -512,15 +518,15 @@ func (rc *raftNode) Process(ctx context.Context, m raftpb.Message) error {
 }
 
 func (rc *raftNode) IsIDRemoved(id uint64) bool {
-	panic("implement me")
+	return false
 }
 
 func (rc *raftNode) ReportUnreachable(id uint64) {
-	panic("implement me")
+	//panic("implement me")
 }
 
 func (rc *raftNode) ReportSnapshot(id uint64, status raft.SnapshotStatus) {
-	panic("implement me")
+	//panic("implement me")
 }
 
 // Todo

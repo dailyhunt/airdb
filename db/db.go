@@ -17,12 +17,12 @@ func Open(path string) (db *Handle, err error) {
 	return nil, nil
 }
 
-func OpenForDebug(id int, cluster string) (db *Handle, err error) {
+func OpenForDebug(id int, cluster string, join bool) (db *Handle, err error) {
 	//log.Info("Opening data handle at path ")
 	handle := &Handle{
 		tables: make(map[string]table.Table),
 	}
-	handle.tables["t1"] = table.NewKvTable(id, cluster)
+	handle.tables["t1"] = table.NewKvTable(id, cluster, join)
 
 	return handle, nil
 }

@@ -19,6 +19,8 @@ const AppName = "airdb"
 var cfgFile string
 var nodeId int
 var peers string
+var kvPort int
+var join bool
 
 var rootCmd = &cobra.Command{
 	Use:   "airdb",
@@ -29,13 +31,15 @@ var rootCmd = &cobra.Command{
 		// Todo: Create store first and pass to all api servers
 		fmt.Println("Id ", nodeId)
 		fmt.Println("Cluster ", peers)
-		db, err := db.OpenForDebug(nodeId, peers)
+		fmt.Println("kvPort ", kvPort)
+		fmt.Println("Join ", join)
+		db, err := db.OpenForDebug(nodeId, peers, join)
 
 		// Todo: (sohan) add proper logging
 		if err != nil {
 			logger.Error("Error while opening database at dir ", "dummy dir")
 		}
-		server.StartHTTPServer(db)
+		server.StartHTTPServer(db, kvPort)
 	},
 }
 
@@ -53,6 +57,8 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file")
 	rootCmd.PersistentFlags().StringVarP(&peers, "peers", "p", "", "peers")
 	rootCmd.PersistentFlags().IntVarP(&nodeId, "nodeId", "n", 0, "node id")
+	rootCmd.PersistentFlags().IntVarP(&kvPort, "kvPort", "k", 80800, "kv port rest api")
+	rootCmd.PersistentFlags().BoolVarP(&join, "join", "j", false, "join exiting cluster")
 
 	//
 	// enable commandline flags
@@ -156,7 +162,7 @@ func configureLogger() {
 	}
 
 	//logLevel, err := logger.ParseLevel(logConfig.Level)
-	logLevel, err := logger.ParseLevel("debug")
+	logLevel, err := logger.ParseLevel("info")
 	if err != nil {
 		panic(fmt.Errorf("Unsupported log level: %s ! Supported Values: panic, fatal, error, warn, warning, debug, info \n", logConfig.Level))
 	}

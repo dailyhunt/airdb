@@ -9,6 +9,11 @@ type KvTable struct {
 	Region region.Region
 }
 
+func (t *KvTable) AddRegionPeer(nodeId int64, url []byte) error {
+	t.Region.AddPeer(nodeId, url)
+	return nil
+}
+
 func (t *KvTable) Close() {
 	panic("implement me")
 }

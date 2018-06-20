@@ -30,6 +30,7 @@ type Region interface {
 	Merge()
 	Add()
 	Decay()
+	AddPeer(nodeId int64, url []byte)
 	//ReadCommits()
 }
 

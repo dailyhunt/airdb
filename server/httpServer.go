@@ -6,19 +6,43 @@ import (
 	"github.com/dailyhunt/airdb/utils"
 	"github.com/gin-gonic/gin"
 	logger "github.com/sirupsen/logrus"
+	"io/ioutil"
 	"net/http"
+	"strconv"
 	"time"
 )
 
 var db d.DB
 
-func StartHTTPServer(d d.DB) {
+func StartHTTPServer(d d.DB, kvPort int) {
 	db = d
 	router := gin.New()
 	//router.Use(gin.Logger())
 	router.GET("/store/:key", getValue)
 	router.POST("/store", setValue)
-	router.Run(":8080")
+	router.POST("/raft/:id", addNode)
+	adrr := ":" + strconv.Itoa(kvPort)
+	logger.Debug("Starting rest api at  : ", adrr)
+	router.Run(adrr)
+
+}
+func addNode(c *gin.Context) {
+	id := c.Params.ByName("id")
+	url, _ := ioutil.ReadAll(c.Request.Body)
+	nodeId, _ := strconv.ParseInt(id, 0, 64)
+
+	table, err := db.GetTable("t1")
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	} else {
+		logger.Debug("Adding node ", nodeId, " with url ", string(url))
+		err := table.AddRegionPeer(nodeId, url)
+		// Todo(sohan) return response
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
+	}
 
 }
 

@@ -25,7 +25,7 @@ func Create(config Config) (table *Table, err error) {
 	return nil, nil
 }
 
-func NewKvTable(id int, cluster string) (table Table) {
+func NewKvTable(id int, cluster string, join bool) (table Table) {
 
 	logger.Info("Added dummy table with local fs region : Table Name t1")
 
@@ -38,9 +38,9 @@ func NewKvTable(id int, cluster string) (table Table) {
 
 	// raft provides a commit stream for the proposals from the http api
 	getSnapshot := func() ([]byte, error) { return localFsRegion.GetSnapshot() }
-	commitC, errorC, snapshotterReady := airaft.NewRaftNode(id, strings.Split(cluster, ","), false, getSnapshot, proposeC, confChangeC)
+	commitC, errorC, snapshotterReady := airaft.NewRaftNode(id, strings.Split(cluster, ","), join, getSnapshot, proposeC, confChangeC)
 
-	localFsRegion = region.NewLocalFs(<-snapshotterReady, proposeC, commitC, errorC)
+	localFsRegion = region.NewLocalFs(<-snapshotterReady, proposeC, commitC, errorC, confChangeC)
 
 	// Todo(sohan) : Need to move to Region class as new method
 	localFsRegion.ID = 1
@@ -69,4 +69,5 @@ type Table interface {
 	Merge()
 	Add()
 	Decay()
+	AddRegionPeer(nodeId int64, url []byte) error
 }
