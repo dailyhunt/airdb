@@ -364,14 +364,20 @@ func (rc *raftNode) startRaft() {
 	rc.raftTransport.Start()
 
 	for i := range rc.peers {
+		//if index+1 is not equal to peer id (node id)
+		// (we are assuming that id are starting from 0),
+		// then add peer to transport
 		if i+1 != rc.id {
+			peerId := types.ID(i + 1)
+			urlStr := []string{rc.peers[i]} // url string [<host>:<port>] as singleton array
 			logger.WithFields(logger.Fields{
 				"id":        rc.raftTransport.ID,
-				"peerId":    rc.peers[i],
+				"peerId":    peerId,
+				"urlStr":    urlStr,
 				"clusterId": rc.raftTransport.ClusterID,
 			}).Info("Adding Peer to Transport")
 
-			rc.raftTransport.AddPeer(types.ID(i+1), []string{rc.peers[i]})
+			rc.raftTransport.AddPeer(peerId, urlStr)
 		}
 	}
 
