@@ -1,7 +1,11 @@
 package table
 
-type CreateConfig struct {
+import (
+	"context"
+	"github.com/dailyhunt/airdb/proto"
+)
 
+type CreateConfig struct {
 }
 
 type Config struct {
@@ -22,10 +26,9 @@ type Table interface {
 	Close()
 	Drop()
 	Archive()
-	Put()
+	Put(ctx context.Context, mutation *server.Mutation)
 	Get()
 	Merge()
 	Add()
 	Decay()
 }
-

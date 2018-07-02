@@ -10,12 +10,12 @@ type CreateConfig struct {
 //type InitConfig struct {
 //}
 
-func Create(config CreateConfig) (db *DB, err error) {
+func Create(config CreateConfig) (db DB, err error) {
 	return
 }
 
 // DB needs to be opened from a data path
-func Open(path string) (db *DB, err error) {
+func Open(path string) (db DB, err error) {
 
 	return nil, nil
 }

@@ -1,0 +1,31 @@
+syntax = "proto3";
+package server;
+
+option go_package = 'server';
+
+
+enum Type {
+    PUT = 0;
+    GET = 1;
+}
+
+
+message Mutation {
+    bytes key = 1;
+    bytes family = 2;
+    bytes col = 3;
+    int64 timestamp = 4;
+    Type mutation_type = 5;
+}
+
+message OpRequest {
+    string table = 1;
+    Mutation mutation = 2;
+}
+
+message OpResponse {
+    bytes value = 1;
+    string err = 2;
+}
+
+

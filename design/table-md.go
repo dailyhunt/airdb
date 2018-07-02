@@ -34,6 +34,7 @@ type Decay struct {
 }
 
 type tableop interface {
+
 	// Data Operation
 	Get(gets ...Get) []Get
 	Put(puts ...Put) error //Todo :  should create column on the fly ??
