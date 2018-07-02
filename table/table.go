@@ -5,8 +5,6 @@ import (
 	"github.com/dailyhunt/airdb/airaft"
 	"github.com/dailyhunt/airdb/operation"
 	"github.com/dailyhunt/airdb/region"
-	"github.com/dailyhunt/airdb/region/mt"
-	"github.com/dailyhunt/airdb/region/vlog"
 	logger "github.com/sirupsen/logrus"
 	"strings"
 )
@@ -41,13 +39,6 @@ func NewKvTable(id int, cluster string, join bool) (table Table) {
 	commitC, errorC, snapshotterReady := airaft.NewRaftNode(id, strings.Split(cluster, ","), join, getSnapshot, proposeC, confChangeC)
 
 	localFsRegion = region.NewLocalFs(<-snapshotterReady, proposeC, commitC, errorC, confChangeC)
-
-	// Todo(sohan) : Need to move to Region class as new method
-	localFsRegion.ID = 1
-	localFsRegion.IsLeader = true
-	localFsRegion.MemTable = mt.New()
-	//localFsRegion.Raft = airaft.NewRaft(id, strings.Split(cluster, ","))
-	localFsRegion.VLog = vlog.New()
 
 	t := &KvTable{
 		Region: localFsRegion,

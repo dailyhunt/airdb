@@ -2,7 +2,6 @@ package region
 
 import (
 	"github.com/dailyhunt/airdb/operation"
-	"github.com/dailyhunt/airdb/region/mt"
 	"github.com/dailyhunt/airdb/region/vlog"
 )
 
@@ -31,13 +30,12 @@ type Region interface {
 	Add()
 	Decay()
 	AddPeer(nodeId int64, url []byte)
-	//ReadCommits()
+	MayBeTriggerFlush()
 }
 
 type Replica struct {
 	ID       uint64
 	IsLeader bool
-	MemTable *mt.Memtable
 	VLog     *vlog.Vlog
 	// Ids of peers for this replica across cluster
 	Peers []uint64

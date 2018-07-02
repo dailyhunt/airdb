@@ -27,6 +27,8 @@ func (t *KvTable) Archive() {
 }
 
 func (t *KvTable) Put(put *operation.Put) error {
+	// Todo: Validate key
+	// Todo : Validate Value
 	t.Region.Put(put)
 	return nil
 }

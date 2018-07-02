@@ -450,10 +450,12 @@ func (rc *raftNode) serveChannels() {
 			// store raft entries to wal, then publish over commit channel
 		case rd := <-rc.raftNode.Ready():
 			// Todo:
-			rc.wal.Save(rd.HardState, rd.Entries)
 			// Todo: Save to WAL
+			rc.wal.Save(rd.HardState, rd.Entries)
 			// Todo: Snapshot stuff
 			//state := rc.raftNode.Status().RaftState.String()
+
+			// Todo : Need to remove to use raft storage for entries
 			rc.raftStorage.Append(rd.Entries)
 			rc.raftTransport.Send(rd.Messages)
 
@@ -560,33 +562,35 @@ func (rc *raftNode) publishSnapshot(snapshotToSave raftpb.Snapshot) {
 
 var snapshotCatchUpEntriesN uint64 = 10000
 
-// Todo
+// Todo - (
+// Send custom message of snapshot type to committed entries
+// to single memtable flush or do flush here itself/ or create snapshot in memtable
 func (rc *raftNode) maybeTriggerSnapshot() {
-	/*	if rc.appliedIndex-rc.snapshotIndex <= rc.snapCount {
-			return
-		}
+	if rc.lastAppliedIndex-rc.snapshotIndex <= rc.snapshotCount {
+		return
+	}
 
-		log.Printf("start snapshot [applied index: %d | last snapshot index: %d]", rc.appliedIndex, rc.snapshotIndex)
-		data, err := rc.getSnapshot()
-		if err != nil {
-			log.Panic(err)
-		}
-		snap, err := rc.raftStorage.CreateSnapshot(rc.appliedIndex, &rc.confState, data)
-		if err != nil {
-			panic(err)
-		}
-		if err := rc.saveSnap(snap); err != nil {
-			panic(err)
-		}
+	logger.Printf("start snapshot [applied index: %d | last snapshot index: %d]", rc.lastAppliedIndex, rc.snapshotIndex)
+	data, err := rc.getSnapshot()
+	if err != nil {
+		logger.Panic(err)
+	}
+	snap, err := rc.raftStorage.CreateSnapshot(rc.lastAppliedIndex, &rc.raftState, data)
+	if err != nil {
+		panic(err)
+	}
+	if err := rc.saveSnap(snap); err != nil {
+		panic(err)
+	}
 
-		compactIndex := uint64(1)
-		if rc.appliedIndex > snapshotCatchUpEntriesN {
-			compactIndex = rc.appliedIndex - snapshotCatchUpEntriesN
-		}
-		if err := rc.raftStorage.Compact(compactIndex); err != nil {
-			panic(err)
-		}
+	compactIndex := uint64(1)
+	if rc.lastAppliedIndex > snapshotCatchUpEntriesN {
+		compactIndex = rc.lastAppliedIndex - snapshotCatchUpEntriesN
+	}
+	if err := rc.raftStorage.Compact(compactIndex); err != nil {
+		panic(err)
+	}
 
-		log.Printf("compacted log at index %d", compactIndex)
-		rc.snapshotIndex = rc.appliedIndex*/
+	logger.Printf("compacted log at index %d", compactIndex)
+	rc.snapshotIndex = rc.lastAppliedIndex
 }
