@@ -20,7 +20,7 @@ func (tableImpl) Archive() {
 	panic("implement me")
 }
 
-func (tableImpl) Put(ctx context.Context, mutation *server.Mutation) {
+func (tableImpl) Put(ctx context.Context, mutation *server.Mutation) error {
 	panic("implement me")
 }
 

@@ -25,7 +25,6 @@ message OpRequest {
 
 message OpResponse {
     bytes value = 1;
-    string err = 2;
 }
 
 

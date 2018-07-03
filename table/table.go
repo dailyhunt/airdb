@@ -26,7 +26,7 @@ type Table interface {
 	Close()
 	Drop()
 	Archive()
-	Put(ctx context.Context, mutation *server.Mutation)
+	Put(ctx context.Context, mutation *server.Mutation) error
 	Get()
 	Merge()
 	Add()

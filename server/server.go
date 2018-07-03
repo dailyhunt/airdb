@@ -2,9 +2,11 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"github.com/dailyhunt/airdb/db"
 	"github.com/dailyhunt/airdb/proto"
 	"github.com/dailyhunt/airdb/table"
+	log "github.com/sirupsen/logrus"
 )
 
 type Server struct {
@@ -27,8 +29,14 @@ func NewServer(opts Options) *Server {
 	}
 }
 
-func (s *Server) getTable(string) table.Table {
-
+func (s *Server) getTable(name string) (table.Table, error) {
+	// Todo : Check if table exists
+	t, err := s.db.GetTable(name)
+	if err != nil {
+		log.Error(fmt.Sprintf("Error while getting table : %s", name))
+		return nil, err
+	}
+	return t, nil
 }
 
 func (s *Server) Put(ctx context.Context, req *server.OpRequest) (*server.OpResponse, error) {
@@ -36,10 +44,19 @@ func (s *Server) Put(ctx context.Context, req *server.OpRequest) (*server.OpResp
 		return nil, err
 	}
 
-	// Todo : Check if table exists
+	t, err := s.getTable(req.GetTable())
+	if err != nil {
+		return nil, err
+	}
 
-	table := s.getTable(req.GetTable())
-	table.Put(ctx, req.GetMutation())
+	err = t.Put(ctx, req.GetMutation())
+	if err != nil {
+		log.Error(fmt.Sprintf("Error while executing PUT on table : %s", req.GetTable()))
+		return nil, err
+	}
+
+	// Todo : Response
+	return &server.OpResponse{}, nil
 
 }
 
