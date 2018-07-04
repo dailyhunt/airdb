@@ -1,9 +1,0 @@
-syntax = "proto3";
-package server;
-import "internal.proto";
-
-
-service airdb {
-    rpc Put (OpRequest) returns (OpResponse){}
-    rpc Get (OpRequest) returns (OpResponse){}
-}

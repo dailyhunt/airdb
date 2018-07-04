@@ -1,26 +1,11 @@
 syntax = "proto3";
-package server;
+package proto;
 
-option go_package = 'server';
-
-
-enum Type {
-    PUT = 0;
-    GET = 1;
-}
-
-
-message Mutation {
-    bytes key = 1;
-    bytes family = 2;
-    bytes col = 3;
-    int64 timestamp = 4;
-    Type mutation_type = 5;
-}
+option go_package = 'proto';
 
 message OpRequest {
     string table = 1;
-    Mutation mutation = 2;
+    bytes reqBody = 3;
 }
 
 message OpResponse {
@@ -28,3 +13,7 @@ message OpResponse {
 }
 
 
+service airdb {
+    rpc Put (OpRequest) returns (OpResponse);
+    rpc Get (OpRequest) returns (OpResponse);
+}

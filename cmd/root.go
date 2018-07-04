@@ -1,15 +1,15 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
 	"fmt"
-	"os"
-	"github.com/spf13/viper"
-	"github.com/spf13/pflag"
-	"strings"
-	"gopkg.in/natefinch/lumberjack.v2"
+	//"github.com/dailyhunt/airdb/cmd/common"
 	logger "github.com/sirupsen/logrus"
-	//"github.com/davecgh/go-spew/spew"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
+	"gopkg.in/natefinch/lumberjack.v2"
+	"os"
+	"strings"
 )
 
 const AppName = "airdb"
@@ -22,6 +22,9 @@ var rootCmd = &cobra.Command{
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Do Stuff Here
+		logger.Info("Starting airdb server ..... ")
+		StartAirdbServer()
+		logger.Info("started airdb server ..... ")
 	},
 }
 
@@ -69,6 +72,7 @@ func initConfig() {
 		viper.SetConfigName(fmt.Sprintf("config-%s", env))
 		viper.SetConfigType("yaml")
 		viper.AddConfigPath("./config")
+		viper.AddConfigPath("./airdb/config")
 		viper.AddConfigPath("$HOME/" + AppName + "/config")
 		viper.AddConfigPath("/usr/local/etc/" + AppName + "/config")
 	}
@@ -81,32 +85,8 @@ func initConfig() {
 }
 
 func configureLogger() {
-	type logFormat string
 
-	const (
-		JSON logFormat = "json"
-		TEXT           = "text"
-	)
-
-	type logOutput string
-
-	const (
-		FILE   logOutput = "file"
-		STDOUT           = "stdout"
-	)
-
-	var logConfig struct {
-		Level  string
-		Format logFormat
-		Output logOutput
-		File struct {
-			Filename   string
-			MaxSize    int
-			Compress   bool
-			MaxBackups int
-			MaxAge     int
-		}
-	}
+	var logConfig logConfig
 
 	err := viper.UnmarshalKey("log", &logConfig)
 	if err != nil {

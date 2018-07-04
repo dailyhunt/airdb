@@ -2,7 +2,6 @@ package table
 
 import (
 	"context"
-	"github.com/dailyhunt/airdb/proto"
 )
 
 type tableImpl struct {
@@ -20,7 +19,7 @@ func (tableImpl) Archive() {
 	panic("implement me")
 }
 
-func (tableImpl) Put(ctx context.Context, mutation *server.Mutation) error {
+func (tableImpl) Put(ctx context.Context, data []byte) error {
 	panic("implement me")
 }
 

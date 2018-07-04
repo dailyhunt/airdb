@@ -1,12 +1,12 @@
 package server
 
 import (
-	"github.com/dailyhunt/airdb/proto"
+	pb "github.com/dailyhunt/airdb/proto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-func validatePutRequest(req *server.OpRequest) error {
+func validatePutRequest(req *pb.OpRequest) error {
 	if req == nil {
 		return status.Error(codes.InvalidArgument, "Req cannot be empty.")
 	}

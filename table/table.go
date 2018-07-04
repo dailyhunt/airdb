@@ -2,7 +2,6 @@ package table
 
 import (
 	"context"
-	"github.com/dailyhunt/airdb/proto"
 )
 
 type CreateConfig struct {
@@ -26,7 +25,7 @@ type Table interface {
 	Close()
 	Drop()
 	Archive()
-	Put(ctx context.Context, mutation *server.Mutation) error
+	Put(ctx context.Context, data []byte) error
 	Get()
 	Merge()
 	Add()
