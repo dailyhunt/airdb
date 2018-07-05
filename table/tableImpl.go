@@ -2,9 +2,16 @@ package table
 
 import (
 	"context"
+	r "github.com/dailyhunt/airdb/region"
 )
 
 type tableImpl struct {
+	name    string
+	regions map[int]r.Region
+}
+
+func (t *tableImpl) Name() string {
+	return t.name
 }
 
 func (t *tableImpl) Open(option *Options) {

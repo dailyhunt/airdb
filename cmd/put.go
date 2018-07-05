@@ -12,9 +12,8 @@ import (
 )
 
 var putCmd = &cobra.Command{
-	Use:   "put <table> <key> <family:column> <value>",
-	Short: "Put a cell and value",
-	Long:  `Put a <key> <family:column> <value> pair to <table> on airdb.`,
+	Use:   "put",
+	Short: "put <table> <key> <family:column> <value>",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 4 {
 			return errors.New("invalid number of arguments passed . Required argument length= 4")

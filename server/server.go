@@ -19,7 +19,10 @@ type Options struct {
 }
 
 func NewAirDBServer(opts Options) *Server {
-	d, err := db.Open(opts.DbPath)
+	dbOpts := db.DefaultDbOptions()
+	dbOpts.Path = opts.DbPath
+
+	d, err := db.Open(dbOpts)
 	if err != nil {
 		// Todo : Add Logging
 	}

@@ -47,7 +47,7 @@ type Handle struct {
 	path            string
 	persistentState PersistentState
 	runState        RunState
-	tables          []table.Table // list of tables
+	tables          map[string]table.Table
 }
 
 // check if db exists
@@ -77,6 +77,8 @@ func (db *Handle) Open(path string) (err error) {
 
 	// open and load manifest file
 
+	// open all active tables
+
 	return
 }
 
@@ -85,23 +87,23 @@ func (db *Handle) Open(path string) (err error) {
 // if not exists then create it and take a lock
 // if yes, then take the lock. else panic
 // internally, db open would require loading all tables metadata and opening tables
-func (db *Handle) Create(config CreateConfig) (err error) {
-	db.path = config.path
+func (db *Handle) Create(config Options) (err error) {
+	db.path = config.Path
 
-	exists, err := fileUtils.Exists(config.path)
+	exists, err := fileUtils.Exists(config.Path)
 	if err != nil {
-		err = errors.Wrap(err, "Error in creating DB at path ("+config.path+")")
+		err = errors.Wrap(err, "Error in creating DB at path ("+config.Path+")")
 		return
 	}
 
 	if exists {
-		if err = fileUtils.AssertDir(config.path); err != nil {
-			err = errors.Wrap(err, "Error in creating DB at path ("+config.path+")")
+		if err = fileUtils.AssertDir(config.Path); err != nil {
+			err = errors.Wrap(err, "Error in creating DB at path ("+config.Path+")")
 			return
 		}
 
-		if err = fileUtils.AssertEmpty(config.path); err != nil {
-			err = errors.Wrap(err, "Error in creating DB at path ("+config.path+")")
+		if err = fileUtils.AssertEmpty(config.Path); err != nil {
+			err = errors.Wrap(err, "Error in creating DB at path ("+config.Path+")")
 			return
 		}
 	} else {
@@ -174,4 +176,12 @@ func (db *Handle) DropTable(name string) (err error) {
 
 func (db *Handle) ArchiveTable(name string) (err error) {
 	return
+}
+
+func (db *Handle) AddTestTable() {
+	db.tables = make(map[string]table.Table)
+	opts := table.DefaultTableOptions()
+	opts.Name = "test"
+	t, _ := table.NewTable(opts)
+	db.tables[t.Name()] = t
 }

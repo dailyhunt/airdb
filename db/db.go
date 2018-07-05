@@ -2,22 +2,28 @@ package db
 
 import "github.com/dailyhunt/airdb/table"
 
-type CreateConfig struct {
+type Options struct {
 	// data path
-	path string
+	Path string
+}
+
+func DefaultDbOptions() Options {
+	return Options{}
 }
 
 //type InitConfig struct {
 //}
 
-func Create(config CreateConfig) (db DB, err error) {
+func Create(opts Options) (db DB, err error) {
 	return
 }
 
 // DB needs to be opened from a data path
-func Open(path string) (db DB, err error) {
-
-	return nil, nil
+func Open(opts Options) (db DB, err error) {
+	// Read manifest file and load table
+	d := &Handle{}
+	d.AddTestTable()
+	return d, nil
 }
 
 type DB interface {
