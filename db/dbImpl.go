@@ -27,14 +27,14 @@ const ManifestFile = "airdb.manifest"
 type PersistentState int
 
 const (
-	CreatedPState     PersistentState = iota
+	CreatedPState PersistentState = iota
 	InitialisedPState
 )
 
 type RunState int
 
 const (
-	CreatingRState     RunState = iota
+	CreatingRState RunState = iota
 	CreatedRState
 	InitialisingRState
 	InitialisedRState
@@ -164,7 +164,7 @@ func (db *Handle) GetTable(name string) (table table.Table, err error) {
 	return
 }
 
-func (db *Handle) CreateTable(config table.CreateConfig) (table table.Table, err error) {
+func (db *Handle) CreateTable(config table.Options) (table table.Table, err error) {
 	return
 }
 

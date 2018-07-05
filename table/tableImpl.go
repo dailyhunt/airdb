@@ -7,34 +7,38 @@ import (
 type tableImpl struct {
 }
 
-func (tableImpl) Close() {
+func (t *tableImpl) Open(option *Options) {
 	panic("implement me")
 }
 
-func (tableImpl) Drop() {
+func (t *tableImpl) Close() {
 	panic("implement me")
 }
 
-func (tableImpl) Archive() {
+func (t *tableImpl) Drop() {
 	panic("implement me")
 }
 
-func (tableImpl) Put(ctx context.Context, data []byte) error {
+func (t *tableImpl) Archive() {
 	panic("implement me")
 }
 
-func (tableImpl) Get() {
+func (t *tableImpl) Put(ctx context.Context, data []byte) error {
 	panic("implement me")
 }
 
-func (tableImpl) Merge() {
+func (t *tableImpl) Get() {
 	panic("implement me")
 }
 
-func (tableImpl) Add() {
+func (t *tableImpl) Merge() {
 	panic("implement me")
 }
 
-func (tableImpl) Decay() {
+func (t *tableImpl) Add() {
+	panic("implement me")
+}
+
+func (t *tableImpl) Decay() {
 	panic("implement me")
 }

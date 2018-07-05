@@ -25,7 +25,7 @@ type DB interface {
 	Close() (err error)
 	ListTables(inactive bool) (tables []table.Table, err error)
 	GetTable(name string) (table table.Table, err error)
-	CreateTable(config table.CreateConfig) (table table.Table, err error)
+	CreateTable(config table.Options) (table table.Table, err error)
 	DropTable(name string) (err error)
 	ArchiveTable(name string) (err error)
 }
