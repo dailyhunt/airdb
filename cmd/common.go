@@ -8,10 +8,7 @@ import (
 	"net"
 
 	pb "github.com/dailyhunt/airdb/proto"
-)
-
-const (
-//port = ":50051"
+	logger "github.com/sirupsen/logrus"
 )
 
 func StartAirdbServer() {
@@ -36,6 +33,8 @@ func StartAirdbServer() {
 		panic(fmt.Errorf("could not create listener for grpc server %s", err))
 	}
 
+	logger.WithFields(logger.Fields{"port": grpcConfig.Port, "dbPath": dbOptions.DbPath}).Info("airdb arguments and options.")
+
 	grpcServer := grpc.NewServer()
 	airdbSever := server.NewAirDBServer(dbOptions)
 	pb.RegisterAirdbServer(grpcServer, airdbSever)
@@ -43,5 +42,21 @@ func StartAirdbServer() {
 	if err = grpcServer.Serve(listener); err != nil {
 		panic(fmt.Errorf("error while serving grpc server %s", err))
 	}
+
+}
+
+func CreateAirdbClientConn() (pb.AirdbClient, error) {
+	port := viper.GetString("grpc.port")
+	if port == "" {
+		logger.Fatalf("Empty grpc port provided %v", viper.AllKeys())
+	}
+
+	conn, err := grpc.Dial(fmt.Sprintf("localhost:%s", port), grpc.WithInsecure())
+	if err != nil {
+		return nil, err
+	}
+
+	client := pb.NewAirdbClient(conn)
+	return client, nil
 
 }
