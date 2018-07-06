@@ -6,8 +6,10 @@ import (
 )
 
 type tableImpl struct {
-	name    string
-	regions map[int]r.Region
+	name     string
+	regions  map[int64]r.Region
+	manifest *Manifest
+	opts     Options
 }
 
 func (t *tableImpl) Name() string {
@@ -19,7 +21,7 @@ func (t *tableImpl) Open(option *Options) {
 }
 
 func (t *tableImpl) Close() {
-	panic("implement me")
+	t.FlushManifest()
 }
 
 func (t *tableImpl) Drop() {
@@ -48,4 +50,7 @@ func (t *tableImpl) Add() {
 
 func (t *tableImpl) Decay() {
 	panic("implement me")
+}
+func (t *tableImpl) FlushManifest() {
+
 }
