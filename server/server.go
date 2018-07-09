@@ -53,7 +53,7 @@ func (s *Server) Put(ctx context.Context, req *pb.OpRequest) (*pb.OpResponse, er
 		return nil, err
 	}
 
-	err = t.Put(ctx, req.GetReqBody())
+	err = t.Mutate(ctx, req.GetReqBody())
 	if err != nil {
 		log.Error(fmt.Sprintf("Error while executing PUT on table : %s", req.GetTable()))
 		return nil, err

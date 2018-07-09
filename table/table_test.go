@@ -46,7 +46,7 @@ func createManifestFile(baseDir string, dbDir string, tableName string, t *testi
 			Name:           tableName,
 			Path:           testDir,
 			SstDir:         filepath.Join(testDir, "sst"),
-			WalDir:         testDir,
+			WalDir:         filepath.Join(testDir, "wal"),
 			MaxRegions:     1,
 			RegionSeqId:    0,
 			CurrentRegions: 0,

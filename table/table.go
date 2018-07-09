@@ -44,7 +44,8 @@ type Table interface {
 	Close()
 	Drop()
 	Archive()
-	Put(ctx context.Context, data []byte) error
+	// Insert / Update / Increment operation ( decay also - later)
+	Mutate(ctx context.Context, data []byte) error
 	Get()
 	Merge()
 	Add()
@@ -63,12 +64,12 @@ func NewTable(opts Options) (Table, error) {
 	rgOpts := region.DefaultRegionOptions()
 	rgOpts.SeqId = 1
 
-	region, err := region.Create(rgOpts)
+	r, err := region.Create(rgOpts)
 	if err != nil {
 		return nil, err
 	}
 
-	t.regions[1] = region
+	t.regions[1] = r
 
 	return t, nil
 }
@@ -89,11 +90,7 @@ func OpenTable(path string) (Table, error) {
 		return nil, err
 	}
 
-	t := &tableImpl{
-		name:     m.Options.Name,
-		manifest: m,
-		opts:     m.Options,
-	}
+	t := NewTableImpl(m)
 
 	// Todo : Open region properly from manifest
 	t.regions = make(map[int64]region.Region)

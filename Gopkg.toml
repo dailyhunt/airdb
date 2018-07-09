@@ -27,3 +27,9 @@
 [prune]
   go-tests = true
   unused-packages = true
+
+
+[[constraint]]
+  name = "github.com/coreos/etcd"
+  version = "v3.3.8"
+

@@ -1,7 +1,7 @@
 log:
   Level: info
   Format: json #  text is another value supported
-  Output: stdout # stdout is another value
+  Output: stdout # stdout or file
   File:
     Filename: "airdb.log"
     MaxSize: 4024
