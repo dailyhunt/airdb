@@ -2,24 +2,16 @@ package table
 
 import (
 	"context"
-	"github.com/coreos/etcd/raft/raftpb"
-	"github.com/coreos/etcd/wal"
 	"github.com/dailyhunt/airdb/mutation"
 	r "github.com/dailyhunt/airdb/region"
-	raft "github.com/dailyhunt/airdb/table/raft"
 	log "github.com/sirupsen/logrus"
-	"os"
 )
 
 type tableImpl struct {
-	name             string
-	regions          map[int64]r.Region
-	manifest         *Manifest
-	opts             Options
-	mutationStream   <-chan []byte
-	confChangeStream <-chan raftpb.ConfChange
-	wal              *wal.WAL
-	raft             *raft.RNode
+	name     string
+	regions  map[int]r.Region
+	manifest *Manifest
+	opts     Options
 }
 
 func NewTableImpl(m *Manifest) *tableImpl {
@@ -28,20 +20,6 @@ func NewTableImpl(m *Manifest) *tableImpl {
 		manifest: m,
 		opts:     m.Options,
 	}
-
-	t.initializeWal()
-	t.mutationStream = make(chan []byte)
-	t.confChangeStream = make(chan raftpb.ConfChange)
-
-	rNodeOptions := raft.RNodeOptions{
-		CurrentNodeId: 0,
-		Peers:         []string{},
-		Join:          false,
-		WalDir:        t.opts.WalDir,
-	}
-
-	t.raft = raft.NewRaftNode(rNodeOptions, t.mutationStream, t.confChangeStream)
-
 	return t
 }
 
@@ -68,6 +46,8 @@ func (t *tableImpl) Archive() {
 func (t *tableImpl) Mutate(ctx context.Context, data []byte) error {
 	m, _ := mutation.Decode(data)
 	log.Infof("proposing mutation to region ... %s ", string(m.Key))
+	region := t.GetRegion(m.Key)
+	region.Mutate(ctx, data)
 	return nil
 }
 
@@ -86,24 +66,15 @@ func (t *tableImpl) Add() {
 func (t *tableImpl) Decay() {
 	panic("implement me")
 }
-func (t *tableImpl) FlushManifest() {
 
+func (t *tableImpl) GetRegion(key []byte) r.Region {
+	region, ok := t.regions[999]
+	if !ok {
+		log.Fatalf("no region found with id %v ", 999, " available regions are (%v)", t.regions)
+	}
+	return region
 }
 
-func (t *tableImpl) initializeWal() {
-	walDir := t.opts.WalDir
-
-	// Create wal if not exist
-	if !wal.Exist(walDir) {
-		if err := os.Mkdir(walDir, 0750); err != nil {
-			log.Fatalf("cannot create wal dir at %s for table %s due to (%v)", walDir, t.Name(), err)
-		}
-
-		w, err := wal.Create(walDir, nil)
-		if err != nil {
-			log.Fatalf("cannot create wal file at %s for table %s due to (%v)", walDir, t.Name(), err)
-		}
-		w.Close()
-	}
+func (t *tableImpl) FlushManifest() {
 
 }

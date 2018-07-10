@@ -56,7 +56,7 @@ type Table interface {
 func NewTable(opts Options) (Table, error) {
 	t := &tableImpl{
 		name:    opts.Name,
-		regions: make(map[int64]region.Region),
+		regions: make(map[int]region.Region),
 	}
 
 	// Read from manifest
@@ -93,9 +93,11 @@ func OpenTable(path string) (Table, error) {
 	t := NewTableImpl(m)
 
 	// Todo : Open region properly from manifest
-	t.regions = make(map[int64]region.Region)
-	rg, _ := region.Create(region.DefaultRegionOptions())
-	t.regions[0] = rg
+	t.regions = make(map[int]region.Region)
+	regOpts := region.DefaultRegionOptions()
+	regOpts.WalDir = m.Options.WalDir
+	rg, _ := region.Create(regOpts)
+	t.regions[rg.GetRegionId()] = rg
 
 	return t, nil
 

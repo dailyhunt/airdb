@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	//"github.com/dailyhunt/airdb/cmd/common"
+
 	logger "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -15,6 +15,7 @@ import (
 const AppName = "airdb"
 
 var cfgFile string
+var raftPort int
 
 var rootCmd = &cobra.Command{
 	Use:   "airdb",
@@ -23,6 +24,7 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Do Stuff Here
 		logger.Info("Starting airdb server ..... ")
+		viper.Set("raft.port", raftPort)
 		StartAirdbServer()
 		logger.Info("started airdb server ..... ")
 	},
@@ -40,6 +42,7 @@ func init() {
 
 	// TODO: mention default search order
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file")
+	rootCmd.PersistentFlags().IntVarP(&raftPort, "raftPort", "r", 12000, "raft port")
 
 	//
 	// enable commandline flags

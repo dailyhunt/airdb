@@ -4,6 +4,7 @@ import (
 	"github.com/dailyhunt/airdb/table"
 	"github.com/dailyhunt/airdb/utils/fileUtils"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"github.com/theckman/go-flock"
 	"path/filepath"
 )
@@ -163,7 +164,12 @@ func (db *Handle) ListTables(inactive bool) (tables []table.Table, err error) {
 }
 
 func (db *Handle) GetTable(name string) (table table.Table, err error) {
-	return
+	t, ok := db.tables[name]
+	if !ok {
+		e := errors.Errorf("table not found :  %s", name)
+		return nil, e
+	}
+	return t, nil
 }
 
 func (db *Handle) CreateTable(config table.Options) (table table.Table, err error) {
@@ -180,8 +186,12 @@ func (db *Handle) ArchiveTable(name string) (err error) {
 
 func (db *Handle) AddTestTable() {
 	db.tables = make(map[string]table.Table)
-	opts := table.DefaultTableOptions()
-	opts.Name = "test"
-	t, _ := table.NewTable(opts)
+	path := "/home/sohanvir/softwares/go/src/github.com/dailyhunt/adb/t1"
+	t, err := table.OpenTable(path)
+	if err != nil {
+		panic(err)
+	}
+
 	db.tables[t.Name()] = t
+	log.Infof("successfully opened table %s ", t.Name())
 }

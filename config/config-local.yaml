@@ -12,6 +12,13 @@ log:
 grpc:
   port: 50051
 
+raft:
+  port: 12000
+  electionTick: 10
+  heartbeat : 1
+  tickerInMill: 100
+
+
 
 dbOptions:
   dbPath: "/home/sohanvir/softwares/go/src/github.com/dailyhunt/airdb/adb"
