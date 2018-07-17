@@ -1,5 +1,9 @@
 package mutation
 
+import (
+	"encoding/json"
+)
+
 type Type uint16
 
 const (
@@ -58,4 +62,16 @@ type Mutation struct {
 	Value        []byte
 	Timestamp    uint64
 	MutationType Type
+}
+
+func (m *Mutation) String() string {
+	mp := make(map[string]interface{})
+	mp["key"] = string(m.Key)
+	mp["fam"] = string(m.Family)
+	mp["col"] = string(m.Col)
+	mp["val"] = string(m.Value)
+	mp["tim"] = m.Timestamp
+	mp["typ"] = m.MutationType.String()
+	bytes, _ := json.Marshal(mp)
+	return string(bytes)
 }

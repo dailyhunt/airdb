@@ -16,6 +16,7 @@ const AppName = "airdb"
 
 var cfgFile string
 var raftPort int
+var raftId int64
 
 var rootCmd = &cobra.Command{
 	Use:   "airdb",
@@ -25,8 +26,9 @@ var rootCmd = &cobra.Command{
 		// Do Stuff Here
 		logger.Info("Starting airdb server ..... ")
 		viper.Set("raft.port", raftPort)
+		viper.Set("raft.id", raftId)
 		StartAirdbServer()
-		logger.Info("started airdb server ..... ")
+
 	},
 }
 
@@ -43,6 +45,7 @@ func init() {
 	// TODO: mention default search order
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file")
 	rootCmd.PersistentFlags().IntVarP(&raftPort, "raftPort", "r", 12000, "raft port")
+	rootCmd.PersistentFlags().Int64VarP(&raftId, "raftId", "n", 12000, "raft Id")
 
 	//
 	// enable commandline flags

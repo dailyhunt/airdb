@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"github.com/pkg/errors"
+	"math"
 )
 
 const (
@@ -58,7 +59,7 @@ func Decode(buf []byte) (m *Mutation, err error) {
 	//	dataType := binary.BigEndian.Uint16(buf[0:2])     // Single Value/Array
 	mutationType := binary.BigEndian.Uint16(buf[2:4]) // Mutation Type
 	kLen := int(binary.BigEndian.Uint16(buf[4:6]))    // Key Len
-	fLen := int(binary.BigEndian.Uint16(buf[4:6]))    // Column Family Len
+	fLen := int(binary.BigEndian.Uint16(buf[6:8]))    // Column Family Len
 	cLen := int(binary.BigEndian.Uint16(buf[8:10]))   // Column Len
 	tLen := int(binary.BigEndian.Uint64(buf[10:18]))  // Bytes for TimeStamp
 	vLen := int(binary.BigEndian.Uint16(buf[18:20]))  // Value Len Type
@@ -83,4 +84,31 @@ func readBuf(buf []byte, from *int, toRead int) []byte {
 	b := buf[*from:to]
 	*from = to
 	return b
+}
+
+// Todo : Make timestamp as first value in array as it fixed and will be easy to read
+func KeyWithTs(buf []byte) []byte {
+	kLen := int(binary.BigEndian.Uint16(buf[4:6]))   // Key Len
+	fLen := int(binary.BigEndian.Uint16(buf[6:8]))   // Column Family Len
+	cLen := int(binary.BigEndian.Uint16(buf[8:10]))  // Column Len
+	tLen := int(binary.BigEndian.Uint64(buf[10:18])) // Bytes for TimeStamp
+
+	from := SingleValueHeaderLength
+	key := readBuf(buf, &from, kLen)
+	from = from + fLen + cLen
+	ts := binary.BigEndian.Uint64(readBuf(buf, &from, tLen))
+
+	out := make([]byte, len(key)+8)
+	copy(out, key)
+	binary.BigEndian.PutUint64(out[len(key):], math.MaxUint64-ts)
+	return out
+
+}
+
+// ParseKey parses the actual key from the key bytes.
+func ParseKey(key []byte) []byte {
+	if key == nil {
+		return nil
+	}
+	return key[:len(key)-8]
 }

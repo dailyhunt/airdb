@@ -20,6 +20,7 @@ type Options struct {
 	Path           string
 	SstDir         string
 	WalDir         string
+	SnapshotDir    string
 	MaxRegions     int
 	RegionSeqId    int64
 	CurrentRegions int
@@ -96,8 +97,10 @@ func OpenTable(path string) (Table, error) {
 	t.regions = make(map[int]region.Region)
 	regOpts := region.DefaultRegionOptions()
 	regOpts.WalDir = m.Options.WalDir
+	regOpts.SnapshotDir = m.Options.SnapshotDir
 	rg, _ := region.Create(regOpts)
 	t.regions[rg.GetRegionId()] = rg
+	log.Debug("Opened table successfully ...")
 
 	return t, nil
 

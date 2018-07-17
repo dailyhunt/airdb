@@ -13,5 +13,7 @@
 
 vendor/
 Gopkg.lock
-#Gopkg.toml
 airdb
+/insert.sh
+/test2.sh
+

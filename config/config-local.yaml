@@ -1,5 +1,5 @@
 log:
-  Level: info
+  Level: debug
   Format: json #  text is another value supported
   Output: stdout # stdout or file
   File:
