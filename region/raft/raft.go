@@ -338,7 +338,7 @@ func (rn *RNode) publishSnapshot(snapshotToSave raftpb.Snapshot) {
 	rn.lastCommittedEntryIndex = snapshotToSave.Metadata.Index
 }
 
-func (rn *RNode) MaybeTriggerSnapshot(fromCommittedIndex uint64, term uint64) {
+func (rn *RNode) MaybeTriggerSnapshot(fromCommittedIndex uint64) {
 	log.Infof("start snapshot [last committed applied index: %d | last snapshot index: %d]", fromCommittedIndex, rn.snapshotIndex)
 
 	// following code is not needed as we are triggering snapshot whenever
