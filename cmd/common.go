@@ -9,6 +9,9 @@ import (
 
 	pb "github.com/dailyhunt/airdb/proto"
 	logger "github.com/sirupsen/logrus"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 func StartAirdbServer() {
@@ -38,6 +41,23 @@ func StartAirdbServer() {
 	grpcServer := grpc.NewServer()
 	airdbSever := server.NewAirDBServer(dbOptions)
 	pb.RegisterAirdbServer(grpcServer, airdbSever)
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGKILL,
+		os.Interrupt,
+		syscall.SIGQUIT)
+
+	// TODO: Handle Graceful shutdown
+	go func() {
+		for sig := range c {
+			fmt.Printf("Got signal from %v", sig)
+			grpcServer.GracefulStop()
+		}
+	}()
 
 	if err = grpcServer.Serve(listener); err != nil {
 		panic(fmt.Errorf("error while serving grpc server %s", err))
