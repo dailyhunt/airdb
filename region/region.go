@@ -2,15 +2,16 @@ package region
 
 import (
 	"context"
-	"fmt"
 	"github.com/coreos/etcd/raft/raftpb"
+	"github.com/dailyhunt/airdb/region/mt"
 	"github.com/dailyhunt/airdb/region/raft"
 	"github.com/spf13/viper"
 )
 
 type Options struct {
-	SeqId  int
-	WalDir string
+	SeqId       int
+	WalDir      string
+	SnapshotDir string
 }
 
 func DefaultRegionOptions() Options {
@@ -35,19 +36,17 @@ func Create(opts Options) (region Region, err error) {
 		seqId:            opts.SeqId,
 		mutationStream:   mutationStream,
 		confChangeStream: make(chan raftpb.ConfChange),
+		mt:               mt.NewMemtable(),
 	}
 
 	rNodeOptions := raft.RNodeOptions{
-		CurrentNodeId:  1,
-		Peers:          []string{},
+		CurrentNodeId:  uint64(viper.GetInt64("raft.id")),
 		Join:           false,
 		WalDir:         opts.WalDir,
+		SnapshotDir:    opts.SnapshotDir,
 		RaftPort:       viper.GetInt("raft.port"),
 		TickerInMillis: int64(viper.GetInt("raft.tickerInMill")),
 	}
-
-	// TODO :: Id will region id and should be across database
-	rNodeOptions.Peers = append(rNodeOptions.Peers, fmt.Sprintf("http://localhost:%d", rNodeOptions.RaftPort))
 
 	rg.raft = raft.NewRaftNode(rNodeOptions, mutationStream, rg.confChangeStream)
 	rg.readCommitStream()

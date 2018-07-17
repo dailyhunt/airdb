@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"github.com/coreos/etcd/etcdserver/stats"
+	"github.com/coreos/etcd/pkg/fileutil"
 	"github.com/coreos/etcd/pkg/types"
 	"github.com/coreos/etcd/raft"
 	"github.com/coreos/etcd/raft/raftpb"
 	"github.com/coreos/etcd/rafthttp"
+	"github.com/coreos/etcd/snap"
 	"github.com/coreos/etcd/wal"
 	"github.com/coreos/etcd/wal/walpb"
 	log "github.com/sirupsen/logrus"
@@ -18,34 +20,41 @@ import (
 	"time"
 )
 
+var defaultSnapshotCount uint64 = 10000
+
 type RNodeOptions struct {
 	CurrentNodeId  uint64
 	RaftPort       int
-	Peers          []string
 	Join           bool
 	WalDir         string
+	SnapshotDir    string
 	TickerInMillis int64
 }
 
 type RNode struct {
 	opts             RNodeOptions
 	mutationStream   <-chan []byte
-	commitStream     chan []byte
+	commitStream     chan raftpb.Entry
 	confChangeStream <-chan raftpb.ConfChange
 	errorStream      chan error
 
-	wal                 *wal.WAL
-	transport           *rafthttp.Transport
-	raftStorage         *raft.MemoryStorage
+	wal                     *wal.WAL
+	transport               *rafthttp.Transport
+	raftStorage             *raft.MemoryStorage
+	raft                    raft.Node
+	raftConfigState         raftpb.ConfState
+	lastLogIndex            uint64
+	lastCommittedEntryIndex uint64
+
 	stopMutationStream  chan struct{} // signals proposal channel closed
 	raftHttpErrorStream chan struct{} // signals http server to shutdown
-	raftHttpDoneStream  chan struct{} // signals http server shutdown complete
+	raftHttpDoneStream  chan struct{}
+	snapshotter         *snap.Snapshotter
+	snapshotterReady    chan<- *snap.Snapshotter
+	snapshotIndex       uint64
+	snapshotCount       uint64
 
-	logStartIndex uint64
-	raft          raft.Node
-	confState     raftpb.ConfState
-
-	// index of log at start
+	// signals http server shutdown complete
 }
 
 func (rn *RNode) Process(ctx context.Context, m raftpb.Message) error {
@@ -64,7 +73,7 @@ func (rn *RNode) ReportSnapshot(id uint64, status raft.SnapshotStatus) {
 
 }
 
-func (rn *RNode) GetCommitStream() <-chan []byte {
+func (rn *RNode) GetCommitStream() <-chan raftpb.Entry {
 	return rn.commitStream
 }
 
@@ -80,21 +89,32 @@ func (rn *RNode) startRaft() {
 }
 
 func (rn *RNode) startRaftWithWal() {
-	log.Info("Starting raft ........")
+	log.Info("starting raft ........")
+
+	// Create snapshotter meta/files
+	snapDir := rn.opts.SnapshotDir
+	if !fileutil.Exist(snapDir) {
+		if err := os.Mkdir(snapDir, 0750); err != nil {
+			log.Fatalf("cannot create dir for snapshot (%v)", err)
+		}
+	}
+	rn.snapshotter = snap.New(snapDir)
+	rn.snapshotterReady <- rn.snapshotter
 
 	oldWalExists := wal.Exist(rn.opts.WalDir)
 	rn.wal = rn.replayWAL()
 	log.Info("replayed WAL ........")
 
-	peerIds := rn.preparePeerIds()
+	//peerIds := rn.preparePeerIds()
 	raftCfg := rn.createRaftConfig()
 
 	if oldWalExists {
 		rn.raft = raft.RestartNode(raftCfg)
 		log.Info("restarted raft node from old wal... ")
 	} else {
-		// Start Raft with predefined peers
-		peersToStartWith := peerIds
+		//Not Supported - Start Raft with predefined peers
+		// Will always single node and add to cluster
+		peersToStartWith := []raft.Peer{{ID: rn.opts.CurrentNodeId}}
 		// Otherwise add node to peers first and start with join flag
 		if rn.opts.Join {
 			peersToStartWith = nil
@@ -107,34 +127,44 @@ func (rn *RNode) startRaftWithWal() {
 func (rn *RNode) replayWAL() *wal.WAL {
 	log.Infof("replaying WAL of member %d at dir %s", rn.opts.CurrentNodeId, rn.opts.WalDir)
 
-	//Todo : Load Snapshot if any
-	// load snapshot
-
-	w := rn.openWal(nil)
+	snapshot := rn.loadSnapshot()
+	w := rn.openWal(snapshot)
 	_, hardState, raftEntries, err := w.ReadAll()
+
+	// TODO: TO Remove
+	if len(raftEntries) > 0 {
+		log.Debugf("last entry index %d first entry index %d ", raftEntries[len(raftEntries)-1].Index, raftEntries[0].Index)
+	}
+
 	if err != nil {
 		log.Fatalf("failed to read WAL (%v)", err)
 	}
 
 	rn.raftStorage = raft.NewMemoryStorage()
-	// Todo: Load snapshot
-	/*if snapshot != nil {
+	if snapshot != nil {
 		rn.raftStorage.ApplySnapshot(*snapshot)
-	}*/
+	}
 
 	rn.raftStorage.SetHardState(hardState)
 	// append to storage so raft starts at the right place in log
 	rn.raftStorage.Append(raftEntries)
-
 	// send nil once lastIndex is published so client knows commit channel is current
 	if len(raftEntries) > 0 {
-		rn.logStartIndex = raftEntries[len(raftEntries)-1].Index
+		// this is needed to mark if replayed entries are published to raft in publishEntries
+		rn.lastLogIndex = raftEntries[len(raftEntries)-1].Index
 	} else {
-		rn.commitStream <- nil
+		rn.commitStream <- raftpb.Entry{}
 	}
 
 	return w
+}
 
+func (rn *RNode) loadSnapshot() *raftpb.Snapshot {
+	snapshot, err := rn.snapshotter.Load()
+	if err != nil && err != snap.ErrNoSnapshot {
+		log.Fatalf("error loading snapshot (%v)", err)
+	}
+	return snapshot
 }
 
 func (rn *RNode) openWal(lastSnapshot *raftpb.Snapshot) *wal.WAL {
@@ -171,16 +201,7 @@ func (rn *RNode) openWal(lastSnapshot *raftpb.Snapshot) *wal.WAL {
 
 }
 
-// Todo : Needed more customization
-func (rn *RNode) preparePeerIds() []raft.Peer {
-	peers := make([]raft.Peer, len(rn.opts.Peers))
-	for i := range peers {
-		id := uint64(i + 1)
-		peers[i] = raft.Peer{ID: id}
-	}
-	return peers
-}
-
+// Todo: config from File or options
 func (rn *RNode) createRaftConfig() *raft.Config {
 	return &raft.Config{
 		ID:            rn.opts.CurrentNodeId,
@@ -199,6 +220,9 @@ func (rn *RNode) createRaftConfig() *raft.Config {
 
 }
 
+// Todo :: Related to stats and cluster id
+// Only start itself. All information related to peers will be
+// added through api
 func (rn *RNode) initializeRaftTransport() {
 	id := rn.opts.CurrentNodeId
 	rn.transport = &rafthttp.Transport{
@@ -211,13 +235,13 @@ func (rn *RNode) initializeRaftTransport() {
 	}
 
 	rn.transport.Start()
-	peers := rn.opts.Peers
-	for i := range peers {
-		peerId := types.ID(i + 1) // Adding id to peers based on index basis on comma separated string
-		us := []string{peers[i]}
-		rn.transport.AddPeer(peerId, us)
+	/*		peers := rn.opts.Peers
+			for i := range peers {
+				peerId := types.ID(i + 1) // Adding id to peers based on index basis on comma separated string
+				us := []string{peers[i]}
+				rn.transport.AddPeer(peerId, us)
 
-	}
+			}*/
 	log.Info("started raft transport .....")
 
 }
@@ -248,7 +272,6 @@ func (rn *RNode) serveRaft() {
 }
 
 func (rn *RNode) serveChannels() {
-
 	rn.initializeSnapshotMeta()
 	go rn.startProposingMutation()
 	defer rn.wal.Close()
@@ -262,11 +285,18 @@ func (rn *RNode) serveChannels() {
 		case rd := <-rn.raft.Ready():
 			rn.wal.Save(rd.HardState, rd.Entries)
 
-			/*if !raft.IsEmptySnap(rd.Snapshot) {
+			if len(rd.Entries) > 10 && log.GetLevel() == log.DebugLevel {
+				log.Debugf("Total entries %d :: Hard State %s ", len(rd.Entries), rd.HardState.String())
+				log.Debugf("Entries %v ", EntriesToString(rd.Entries))
+
+			}
+
+			// TODO :: Need to test
+			if !raft.IsEmptySnap(rd.Snapshot) {
 				rn.saveSnap(rd.Snapshot)
 				rn.raftStorage.ApplySnapshot(rd.Snapshot)
 				rn.publishSnapshot(rd.Snapshot)
-			}*/
+			}
 			rn.raftStorage.Append(rd.Entries)
 			rn.transport.Send(rd.Messages)
 			entriesToApply := rn.entriesToApply(rd.CommittedEntries)
@@ -274,7 +304,7 @@ func (rn *RNode) serveChannels() {
 				rn.stop()
 				return
 			}
-			/*rn.maybeTriggerSnapshot()*/ // TODO
+
 			rn.raft.Advance()
 
 		case err := <-rn.transport.ErrorC:
@@ -287,14 +317,79 @@ func (rn *RNode) serveChannels() {
 	}
 
 }
-func (rn *RNode) initializeSnapshotMeta() {
-	/*snap, err := rc.raftStorage.Snapshot()
+
+// Todo :: Need to verify yet
+func (rn *RNode) publishSnapshot(snapshotToSave raftpb.Snapshot) {
+	if raft.IsEmptySnap(snapshotToSave) {
+		return
+	}
+
+	log.Infof("publishing snapshot at index %d", rn.snapshotIndex)
+	defer log.Infof("finished publishing snapshot at index %d", rn.snapshotIndex)
+
+	if snapshotToSave.Metadata.Index <= rn.lastCommittedEntryIndex {
+		log.Fatalf("snapshot index [%d] should > progress.appliedIndex [%d] + 1", snapshotToSave.Metadata.Index, rn.lastCommittedEntryIndex)
+	}
+
+	rn.commitStream <- raftpb.Entry{} // trigger fsm to load snapshot
+
+	rn.raftConfigState = snapshotToSave.Metadata.ConfState
+	rn.snapshotIndex = snapshotToSave.Metadata.Index
+	rn.lastCommittedEntryIndex = snapshotToSave.Metadata.Index
+}
+
+func (rn *RNode) MaybeTriggerSnapshot(fromCommittedIndex uint64, term uint64) {
+	log.Infof("start snapshot [last committed applied index: %d | last snapshot index: %d]", fromCommittedIndex, rn.snapshotIndex)
+
+	// following code is not needed as we are triggering snapshot whenever
+	// memtable is flushed .
+	/*if fromCommittedIndex-rn.snapshotIndex <= rn.snapshotCount {
+		return
+	}*/
+
+	snapshot, err := rn.raftStorage.CreateSnapshot(fromCommittedIndex, &rn.raftConfigState, nil)
 	if err != nil {
 		panic(err)
 	}
-	rc.confState = snap.Metadata.ConfState
-	rc.snapshotIndex = snap.Metadata.Index
-	rc.appliedIndex = snap.Metadata.Index*/
+	if err := rn.saveSnap(snapshot); err != nil {
+		panic(err)
+	}
+
+	if err := rn.raftStorage.Compact(fromCommittedIndex); err != nil {
+		panic(err)
+	}
+
+	log.Printf("compacted log at index %d", fromCommittedIndex)
+	rn.snapshotIndex = fromCommittedIndex
+
+}
+
+func (rn *RNode) saveSnap(snap raftpb.Snapshot) error {
+	// must save the snapshot index to the WAL before saving the
+	// snapshot to maintain the invariant that we only Open the
+	// wal at previously-saved snapshot indexes.
+	walSnap := walpb.Snapshot{
+		Index: snap.Metadata.Index,
+		Term:  snap.Metadata.Term,
+	}
+	if err := rn.wal.SaveSnapshot(walSnap); err != nil {
+		return err
+	}
+	if err := rn.snapshotter.SaveSnap(snap); err != nil {
+		return err
+	}
+	return rn.wal.ReleaseLockTo(snap.Metadata.Index)
+}
+
+// Initialize snapshot meta including lastCommittedEntryIndex
+func (rn *RNode) initializeSnapshotMeta() {
+	snap, err := rn.raftStorage.Snapshot()
+	if err != nil {
+		panic(err)
+	}
+	rn.raftConfigState = snap.Metadata.ConfState
+	rn.snapshotIndex = snap.Metadata.Index
+	rn.lastCommittedEntryIndex = snap.Metadata.Index
 }
 func (rn *RNode) startProposingMutation() {
 	var confChangeCount uint64 = 0
@@ -322,45 +417,49 @@ func (rn *RNode) startProposingMutation() {
 }
 
 func (rn *RNode) entriesToApply(entries []raftpb.Entry) (toApply []raftpb.Entry) {
-	// Todo ::
-	/*if len(entries) == 0 {
+	if len(entries) == 0 {
 		return
 	}
 	firstIdx := entries[0].Index
-	if firstIdx > rn.appliedIndex+1 {
-		log.Fatalf("first index of committed entry[%d] should <= progress.appliedIndex[%d]+1", firstIdx, rc.appliedIndex)
-	}
-	if rn.appliedIndex-firstIdx+1 < uint64(len(entries)) {
-		toApply = entries[rn.appliedIndex-firstIdx+1:]
-	}
-	return toApply*/
-	return entries
-}
-func (rn *RNode) publishEntries(entries []raftpb.Entry) bool {
-	for i := range entries {
 
+	if firstIdx > rn.lastCommittedEntryIndex+1 {
+		log.Fatalf("first index of committed entry[%d] should <= progress.appliedIndex[%d]+1", firstIdx, rn.lastCommittedEntryIndex)
+	}
+
+	indexDiff := rn.lastCommittedEntryIndex - firstIdx
+	startIndex := indexDiff + 1
+
+	if startIndex < uint64(len(entries)) {
+		toApply = entries[startIndex:]
+	}
+	return toApply
+}
+
+// publishEntries writes committed log entries to commit channel and returns
+// whether all entries could be published.
+func (rn *RNode) publishEntries(entries []raftpb.Entry) bool {
+
+	for i := range entries {
 		entry := entries[i]
+
 		switch entry.Type {
 
 		case raftpb.EntryNormal:
 			if len(entry.Data) == 0 {
-				// ignore empty messages
-				break
+				break // ignore empty messages
 			}
-			s := string(entry.Data)
-			fmt.Println("Normal entry ", s)
 			select {
-			case rn.commitStream <- entry.Data:
-			case <-rn.mutationStream:
+			case rn.commitStream <- entry:
+			case <-rn.stopMutationStream:
 				return false
 			}
 
 		case raftpb.EntryConfChange:
 			var cc raftpb.ConfChange
 			cc.Unmarshal(entry.Data)
-			rn.confState = *rn.raft.ApplyConfChange(cc)
+			rn.raftConfigState = *rn.raft.ApplyConfChange(cc)
 			switch cc.Type {
-			// Todo : Need to doc and modify
+			// Todo : Need to add document and modify
 			case raftpb.ConfChangeAddNode:
 				if len(cc.Context) > 0 {
 					rn.transport.AddPeer(types.ID(cc.NodeID), []string{string(cc.Context)})
@@ -374,19 +473,18 @@ func (rn *RNode) publishEntries(entries []raftpb.Entry) bool {
 			}
 		}
 
-		// after commit, update appliedIndex
-		// Todo ::
-		/*rn.appliedIndex = entry.Index*/
+		// after commit, update last appliedIndex.
+		// this wll be need to ignore old entries or entries which are already applied
+		rn.lastCommittedEntryIndex = entry.Index
 
 		// special nil commit to signal replay has finished
-		// Todo ::
-		/*if entry.Index == rn.lastIndex {
+		if entry.Index == rn.lastLogIndex {
 			select {
-			case rn.commitStream <- nil:
-			case <-rn.mutationStream:
+			case rn.commitStream <- raftpb.Entry{}:
+			case <-rn.stopMutationStream:
 				return false
 			}
-		}*/
+		}
 	}
 	return true
 }
@@ -417,11 +515,13 @@ func NewRaftNode(opts RNodeOptions, mutationStream <-chan []byte, confChangeStre
 	node := &RNode{
 		opts:                opts,
 		mutationStream:      mutationStream,
-		commitStream:        make(chan []byte),
+		commitStream:        make(chan raftpb.Entry),
 		confChangeStream:    confChangeStream,
 		stopMutationStream:  make(chan struct{}),
 		raftHttpErrorStream: make(chan struct{}),
 		raftHttpDoneStream:  make(chan struct{}),
+		snapshotterReady:    make(chan *snap.Snapshotter, 1),
+		snapshotCount:       defaultSnapshotCount,
 	}
 
 	go node.startRaft()
