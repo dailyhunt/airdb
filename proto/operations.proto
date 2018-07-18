@@ -1,0 +1,30 @@
+syntax= "proto3";
+package proto ;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+
+message Put {
+    // should use constant value ??
+    bytes key = 1;
+    bytes col = 2 ;
+    bytes value = 3 ;
+    uint64 epoch = 4;
+}
+
+message Get {
+    bytes key = 1;
+    bytes col = 2 ;
+    bytes value = 3 ;
+    uint64 epoch = 4;
+}
+
+message Increment {
+    bytes key = 1;
+    bytes col = 2 ;
+    bytes by = 3 ;
+    uint64 epoch = 4;
+}
