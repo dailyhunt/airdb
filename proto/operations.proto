@@ -28,3 +28,16 @@ message Increment {
     bytes by = 3 ;
     uint64 epoch = 4;
 }
+
+
+message PutBatch  {
+    repeated Put puts = 1 ;
+}
+
+message GetBatch  {
+    repeated Get gets = 1 ;
+}
+
+message IncrementBatch  {
+    repeated Increment incrs = 1 ;
+}
