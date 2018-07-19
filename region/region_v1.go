@@ -2,13 +2,15 @@ package region
 
 import (
 	"context"
+	"sync"
+
 	"github.com/andy-kimball/arenaskl"
 	"github.com/coreos/etcd/raft/raftpb"
-	"github.com/dailyhunt/airdb/mutation"
+	pb "github.com/dailyhunt/airdb/proto"
 	"github.com/dailyhunt/airdb/region/mt"
 	"github.com/dailyhunt/airdb/region/raft"
+	util "github.com/dailyhunt/airdb/utils/commonUtils"
 	log "github.com/sirupsen/logrus"
-	"sync"
 )
 
 type regionV1 struct {
@@ -60,7 +62,14 @@ func (r *regionV1) readCommitStream() {
 			return
 		}
 
-		keyWithTs := mutation.KeyWithTs(data)
+		// Todo : Need to read key efficiently (partial byte read)
+		// Need to write custom header encode/decode per operation to read key with ts
+		// +--------------+--------------------+----------------------------+
+		// |   Header Len | Header (keyWithTs) | protoBuf op message bytes  |
+		// +--------------+--------------------+----------------------------+
+		var p pb.Put
+		p.Unmarshal(data)
+		keyWithTs := util.KeyWithTs(p.Key, p.GetEpoch())
 		err := r.mt.Put(keyWithTs, data)
 		if err != nil {
 			r.mayBeFlushMemtable(commitEntry, err)
@@ -114,9 +123,9 @@ func (r *regionV1) flushIMemtable(indexForSnapshot uint64) {
 	m := r.imt
 	itr := m.Iterator()
 	for itr.SeekToFirst(); itr.Valid(); itr.Next() {
-		key := mutation.ParseKey(itr.Key())
-		mut, _ := mutation.Decode(itr.Value())
-		log.Debugf("Key %s :: Value %s ", string(key), mut.String())
+		var p pb.Put
+		p.Unmarshal(itr.Value())
+		log.Debugf("Key %s :: Value %s ", p.Key, p.String())
 	}
 
 	r.imt = nil

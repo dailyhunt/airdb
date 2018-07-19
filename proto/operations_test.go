@@ -2,13 +2,15 @@ package proto
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"unsafe"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPut(t *testing.T) {
 	put := &Put{
+		Op:    Op_PUT,
 		Key:   []byte("k1"),
 		Col:   []byte("ig"),
 		Value: []byte("ig_x_256"),

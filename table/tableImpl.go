@@ -2,7 +2,8 @@ package table
 
 import (
 	"context"
-	"github.com/dailyhunt/airdb/mutation"
+
+	pb "github.com/dailyhunt/airdb/proto"
 	r "github.com/dailyhunt/airdb/region"
 	log "github.com/sirupsen/logrus"
 )
@@ -44,9 +45,12 @@ func (t *tableImpl) Archive() {
 }
 
 func (t *tableImpl) Mutate(ctx context.Context, data []byte) error {
-	m, _ := mutation.Decode(data)
-	log.Infof("proposing mutation to region ... %s ", string(m.Key))
-	region := t.GetRegion(m.Key)
+	//m, _ := mutation.Decode(data)
+	var put pb.Put
+	put.Unmarshal(data)
+
+	log.Infof("proposing mutation to region ... %s ", put.String())
+	region := t.GetRegion(put.Key)
 	region.Mutate(ctx, data)
 	return nil
 }

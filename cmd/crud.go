@@ -3,12 +3,14 @@ package cmd
 import (
 	"context"
 	"errors"
-	"github.com/dailyhunt/airdb/mutation"
+	"time"
+
+	"fmt"
+
 	"github.com/dailyhunt/airdb/proto"
+	pb "github.com/dailyhunt/airdb/proto"
 	logger "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"strings"
-	"time"
 )
 
 var putCmd = &cobra.Command{
@@ -22,24 +24,26 @@ var putCmd = &cobra.Command{
 	},
 
 	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("args ", args)
 
-		cell := strings.Split(args[2], ":")
+		table := args[0]
 
-		m := &mutation.Mutation{
-			Key:          []byte(args[1]),
-			Family:       []byte(cell[0]),
-			Col:          []byte(cell[1]),
-			Value:        []byte(args[3]),
-			Timestamp:    uint64(time.Now().Unix()),
-			MutationType: mutation.PUT,
+		put := &pb.Put{
+			Key:   []byte(args[1]),
+			Col:   []byte(args[2]),
+			Value: []byte(args[3]),
+			Epoch: uint64(time.Now().Unix()),
 		}
 
-		req := &proto.OpRequest{
-			Table:   args[0],
-			ReqBody: mutation.Encode(m),
+		dAtA, err := put.Marshal()
+
+		if err != nil {
+			logger.Fatal("error while marshalling put")
 		}
 
-		logger.WithFields(logger.Fields{"table": args[0], "key": args[1], "family": cell[0], "column": cell[1]}).Info("put operation")
+		req := &proto.OpRequest{Table: table, ReqBody: dAtA}
+
+		logger.WithFields(logger.Fields{"table": table, "key": args[1], "column": args[2]}).Info("put operation")
 
 		client, err := CreateAirdbClientConn()
 		if err != nil {

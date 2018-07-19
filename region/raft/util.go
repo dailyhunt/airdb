@@ -2,7 +2,7 @@ package raft
 
 import (
 	"github.com/coreos/etcd/raft/raftpb"
-	"github.com/dailyhunt/airdb/mutation"
+	"github.com/dailyhunt/airdb/proto"
 )
 
 func EntriesToString(entries []raftpb.Entry) []string {
@@ -11,11 +11,9 @@ func EntriesToString(entries []raftpb.Entry) []string {
 	for i, v := range entries {
 		entryType := v.Type
 		if entryType == raftpb.EntryNormal && v.Data != nil {
-			m, err := mutation.Decode(v.Data)
-			if err != nil {
-				panic(err)
-			}
-			parsed[i] = m.String()
+			var p proto.Put
+			p.Unmarshal(v.Data)
+			parsed[i] = p.String()
 		} else {
 			parsed[i] = v.String()
 		}

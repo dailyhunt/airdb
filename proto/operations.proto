@@ -7,12 +7,18 @@ option (gogoproto.marshaler_all) = true;
 option (gogoproto.unmarshaler_all) = true;
 option (gogoproto.sizer_all) = true;
 
+enum Op {
+    PUT = 0 ;
+    GET = 1 ;
+}
+
 message Put {
     // should use constant value ??
-    bytes key = 1;
-    bytes col = 2 ;
-    bytes value = 3 ;
-    uint64 epoch = 4;
+    Op op = 1 ;
+    bytes key = 2;
+    bytes col = 3 ;
+    bytes value = 4 ;
+    uint64 epoch = 5;
 }
 
 message Get {
